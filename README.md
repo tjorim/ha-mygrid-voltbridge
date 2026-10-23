@@ -27,7 +27,7 @@ Connect the P1 cable before adding the device: entities are created from the fir
 
 ## How data arrives
 
-Live power, voltage and current come from the device's UDP broadcast (port 49491, about once a second). The HTTP snapshot, which also carries gas, is polled. A quiet UDP stream never delays the poll. If broadcasts do not reach Home Assistant (VLANs, containers without host networking), everything still works at the polling interval, and the log says "polling only" when the UDP port could not be opened.
+Live power, voltage and current come from the device's UDP broadcast (port 49491, about once a second). The HTTP snapshot and the raw DSMR telegram, which carry gas, water, the breaker and the peak history, are polled. A quiet UDP stream never delays the poll. If broadcasts do not reach Home Assistant (VLANs, containers without host networking), everything still works at the polling interval, and the log says "polling only" when the UDP port could not be opened.
 
 ## Supported functions
 
@@ -37,7 +37,10 @@ Live power, voltage and current come from the device's UDP broadcast (port 49491
 | Energy imported / exported (day, night) | `total_increasing`, suitable for the Energy dashboard |
 | Voltage and current per phase | One set for each phase the meter reports (L1 verified) |
 | Import / export power per phase | Disabled by default |
-| Average demand, peak demand, peak demand time | Created if the meter reports them |
+| Current average demand, peak demand, peak demand time | Quarter-hour average and the month's peak (capacity tariff). The peak sensor carries the monthly peak history as the `history` attribute |
+| Water | m³ from a water meter on the meter's M-Bus, read from the raw telegram |
+| Breaker | Diagnostic: open / closed / ready to reconnect |
+| Limiter and fuse threshold | Diagnostic, disabled by default; created only when the meter has real limits (999.9 kW / 999 A mean none) |
 | Tariff | `day` / `night` |
 | Gas | m³; only if a gas meter is connected. Polled; not part of the UDP broadcast |
 
@@ -47,14 +50,14 @@ There are no actions, buttons or controls. The device has no authentication and 
 
 - **Energy dashboard:** add *Energy imported (day/night)* as grid consumption and *Energy exported (day/night)* as return to grid, and *Gas* as the gas source.
 - **Solar-surplus automation:** trigger when *Net power* stays below `-500` W for five minutes, then start the washing machine. Net power is the sum of all phases, negative while exporting.
-- **Capacity tariff (Belgium):** alert when *Average demand* climbs towards the *Peak demand* of the month. The meaning of *Average demand* is taken from the device's field name; check it against your meter.
+- **Capacity tariff (Belgium):** alert when *Current average demand* (the running quarter-hour average, DSMR `1-0:1.4.0`) climbs towards the month's *Peak demand*.
 
 ## Known limitations
 
 - The API is reverse-engineered and unofficial; firmware changes can break it.
 - Export power/energy and phases L2/L3 are decoded by pattern, not verified against hardware (the test meter is single-phase with no export).
-- The gas meter reports every few minutes, so the gas sensor changes at the poll rate at best.
-- Entities appear only for what the meter reports when the entry is set up. Reload the entry after connecting a gas meter or adding a phase.
+- Gas and water meters report every few minutes to an hour, so those sensors change at that pace.
+- Entities appear only for what the meter reports when the entry is set up. Reload the entry after connecting a gas or water meter or adding a phase.
 - Only one meter per config entry; add the integration again for a second VoltBridge.
 - Not published on PyPI or the HACS default list; no brand artwork is bundled.
 

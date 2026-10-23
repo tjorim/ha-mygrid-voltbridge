@@ -21,13 +21,17 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from mygrid_voltbridge import P1Data, PhaseData
+from mygrid_voltbridge import P1Data, PhaseData, Telegram
 
 from .coordinator import VoltBridgeConfigEntry, VoltBridgeCoordinator
 from .entity import VoltBridgeEntity
 
 PARALLEL_UPDATES = 0
 TARIFFS = {1: "day", 2: "night"}
+BREAKER_STATES = {0: "open", 1: "closed", 2: "ready_to_reconnect"}
+# The meter reports 999.9 kW / 999 A when no limiter or fuse supervision is set.
+NO_LIMIT_W = 999_900
+NO_LIMIT_A = 999
 
 type Value = int | float | str | datetime | None
 
@@ -109,6 +113,61 @@ SENSORS = (
 
 
 @dataclass(frozen=True, kw_only=True)
+class VoltBridgeTelegramDescription(SensorEntityDescription):
+    """A value from the raw telegram; created only if the meter reports it."""
+
+    value_fn: Callable[[Telegram], Value]
+
+
+TELEGRAM_SENSORS = (
+    VoltBridgeTelegramDescription(
+        key="water",
+        translation_key="water",
+        device_class=SensorDeviceClass.WATER,
+        native_unit_of_measurement=UnitOfVolume.CUBIC_METERS,
+        state_class=SensorStateClass.TOTAL_INCREASING,
+        value_fn=lambda t: c.reading if (c := t.channel_of("water")) else None,
+    ),
+    VoltBridgeTelegramDescription(
+        key="breaker",
+        translation_key="breaker",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(BREAKER_STATES.values()),
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda t: (
+            BREAKER_STATES.get(t.breaker_state) if t.breaker_state is not None else None
+        ),
+    ),
+    VoltBridgeTelegramDescription(
+        key="limiter_threshold",
+        translation_key="limiter_threshold",
+        device_class=SensorDeviceClass.POWER,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda t: (
+            t.limiter_threshold
+            if t.limiter_threshold is not None and t.limiter_threshold < NO_LIMIT_W
+            else None
+        ),
+    ),
+    VoltBridgeTelegramDescription(
+        key="fuse_threshold",
+        translation_key="fuse_threshold",
+        device_class=SensorDeviceClass.CURRENT,
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda t: (
+            t.fuse_threshold
+            if t.fuse_threshold is not None and t.fuse_threshold < NO_LIMIT_A
+            else None
+        ),
+    ),
+)
+
+
+@dataclass(frozen=True, kw_only=True)
 class VoltBridgePhaseDescription(SensorEntityDescription):
     """One per-phase value; ``phase`` is 1-3."""
 
@@ -177,6 +236,12 @@ async def async_setup_entry(
         for description in SENSORS
         if not description.optional or description.value_fn(data) is not None
     ]
+    if (telegram := coordinator.telegram) is not None:
+        entities.extend(
+            VoltBridgeTelegramSensor(coordinator, description)
+            for description in TELEGRAM_SENSORS
+            if description.value_fn(telegram) is not None
+        )
     for phase in sorted(data.phases):
         entities.extend(
             VoltBridgePhaseSensor(coordinator, description)
@@ -201,6 +266,42 @@ class VoltBridgeSensor(VoltBridgeEntity, SensorEntity):
     @property
     def native_value(self) -> Value:
         return self.entity_description.value_fn(self.coordinator.data)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, list[dict[str, str | int]]] | None:
+        """Attach the monthly peak history to the peak demand sensor."""
+        telegram = self.coordinator.telegram
+        if self.entity_description.key != "peak_demand" or telegram is None:
+            return None
+        return {
+            "history": [
+                {
+                    "month_end": peak.month_end.isoformat(),
+                    "peak_at": peak.peak_at.isoformat(),
+                    "power": peak.power,
+                }
+                for peak in telegram.monthly_peaks
+            ]
+        }
+
+
+class VoltBridgeTelegramSensor(VoltBridgeEntity, SensorEntity):
+    """A value read from the raw telegram."""
+
+    entity_description: VoltBridgeTelegramDescription
+
+    def __init__(
+        self,
+        coordinator: VoltBridgeCoordinator,
+        description: VoltBridgeTelegramDescription,
+    ) -> None:
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
+
+    @property
+    def native_value(self) -> Value:
+        telegram = self.coordinator.telegram
+        return None if telegram is None else self.entity_description.value_fn(telegram)
 
 
 class VoltBridgePhaseSensor(VoltBridgeEntity, SensorEntity):

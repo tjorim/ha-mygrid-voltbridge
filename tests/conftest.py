@@ -2,15 +2,29 @@
 
 from collections.abc import Callable, Generator
 from datetime import UTC, datetime
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from mygrid_voltbridge import BroadcastStream, P1Broadcast, P1Data, PhaseData
+from mygrid_voltbridge import (
+    BroadcastStream,
+    P1Broadcast,
+    P1Data,
+    PhaseData,
+    parse_telegram,
+)
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.mygrid_voltbridge.const import DOMAIN
 
 SERIAL = "1SAG0000000000"
+TELEGRAM_TEXT = (
+    (Path(__file__).parent / "fixtures" / "telegram.txt").read_bytes().decode("latin-1")
+)
+
+
+def make_telegram():  # type: ignore[no-untyped-def]
+    return parse_telegram(TELEGRAM_TEXT)
 
 
 def make_data(**overrides: object) -> P1Data:
@@ -71,6 +85,7 @@ def client() -> Generator[AsyncMock]:
     ):
         instance = AsyncMock()
         instance.async_get_p1_data.return_value = make_data()
+        instance.async_get_telegram.return_value = make_telegram()
         coordinator_cls.return_value = instance
         yield instance
 

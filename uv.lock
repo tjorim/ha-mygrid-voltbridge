@@ -1210,7 +1210,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "mygrid-voltbridge", git = "https://github.com/tjorim/mygrid-voltbridge?rev=v0.1.0" },
+    { name = "mygrid-voltbridge", git = "https://github.com/tjorim/mygrid-voltbridge?rev=v0.2.0" },
     { name = "mypy", specifier = "==2.4.0" },
     { name = "pytest-homeassistant-custom-component", specifier = "==0.13.373" },
     { name = "ruff", specifier = "==0.17.2" },
@@ -1800,8 +1800,8 @@ wheels = [
 
 [[package]]
 name = "mygrid-voltbridge"
-version = "0.1.0"
-source = { git = "https://github.com/tjorim/mygrid-voltbridge?rev=v0.1.0#ed11411d322cac4dd4c0b43f0574d1abeb819c73" }
+version = "0.2.0"
+source = { git = "https://github.com/tjorim/mygrid-voltbridge?rev=v0.2.0#7bca7a1f459a88f7787404490da5ca2aa90a0d40" }
 dependencies = [
     { name = "aiohttp" },
 ]

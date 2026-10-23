@@ -8,7 +8,7 @@ rules:
     comment: The integration provides no actions.
   appropriate-polling:
     status: done
-    comment: Live values are pushed over UDP; the HTTP snapshot is polled every 30 s (5-600 s configurable) because the device is a small microcontroller.
+    comment: Live values are pushed over UDP; the HTTP snapshot and raw telegram are polled every 30 s (5-600 s configurable) because the device is a small microcontroller.
   brands:
     status: todo
     comment: No manufacturer artwork rights were supplied; add brand/icon.png once permission exists.

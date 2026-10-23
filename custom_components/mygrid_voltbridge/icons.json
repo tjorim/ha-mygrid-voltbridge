@@ -7,6 +7,14 @@
           "day": "mdi:weather-sunny",
           "night": "mdi:weather-night"
         }
+      },
+      "breaker": {
+        "default": "mdi:electric-switch-closed",
+        "state": {
+          "open": "mdi:electric-switch",
+          "closed": "mdi:electric-switch-closed",
+          "ready_to_reconnect": "mdi:electric-switch"
+        }
       }
     }
   }

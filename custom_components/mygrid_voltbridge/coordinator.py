@@ -16,9 +16,11 @@ from mygrid_voltbridge import (
     BroadcastStream,
     P1Broadcast,
     P1Data,
+    Telegram,
     VoltBridgeClient,
     VoltBridgeError,
     VoltBridgeNoDataError,
+    VoltBridgeUnsupportedError,
     async_listen,
 )
 
@@ -46,6 +48,7 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
             seconds=entry.options.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
         )
         self._cancel_poll: CALLBACK_TYPE | None = None
+        self.telegram: Telegram | None = None
 
     async def _async_update_data(self) -> P1Data:
         issue_id = f"no_p1_data_{self.config_entry.entry_id}"
@@ -68,7 +71,21 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
                 translation_domain=DOMAIN, translation_key="communication_error"
             ) from err
         ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+        await self._async_update_telegram()
         return data
+
+    async def _async_update_telegram(self) -> None:
+        """Read the raw telegram for water, breaker and peak history.
+
+        Optional: older firmware may lack the endpoint, and a failure here must
+        not make the main snapshot unavailable, so the last good one is kept.
+        """
+        try:
+            self.telegram = await self.client.async_get_telegram()
+        except VoltBridgeUnsupportedError:
+            self.telegram = None
+        except VoltBridgeError as err:
+            LOGGER.debug("Telegram unavailable, keeping the previous one: %s", err)
 
     async def async_start(self) -> None:
         """Take the first snapshot, then start push and poll."""

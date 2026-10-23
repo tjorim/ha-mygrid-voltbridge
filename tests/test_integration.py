@@ -14,6 +14,7 @@ from mygrid_voltbridge import (
     PhaseData,
     VoltBridgeConnectionError,
     VoltBridgeNoDataError,
+    VoltBridgeUnsupportedError,
 )
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
@@ -24,7 +25,7 @@ from custom_components.mygrid_voltbridge.diagnostics import (
     async_get_config_entry_diagnostics,
 )
 
-from .conftest import SERIAL, make_broadcast, make_data
+from .conftest import SERIAL, make_broadcast, make_data, make_telegram
 
 
 def state(hass: HomeAssistant, key: str) -> str | None:
@@ -191,6 +192,10 @@ async def test_diagnostics_redacts_identifiers(hass, client, entry, listener) ->
     assert result["entry"]["host"] == "**REDACTED**"
     assert result["data"]["meter_serial"] == "**REDACTED**"
     assert result["data"]["import_power"] == 261
+    assert {c["kind"] for c in result["telegram"]["channels"]} == {"gas", "water"}
+    assert "objects" not in result["telegram"] and "equipment" not in str(
+        result["telegram"]
+    )
 
 
 async def test_device_registry_and_disabled_defaults(
@@ -234,3 +239,76 @@ async def test_repair_issue_while_no_p1_data(hass, client, entry, listener) -> N
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=62))
     await hass.async_block_till_done()
     assert issues.async_get_issue("mygrid_voltbridge", issue_id) is None
+
+
+async def test_telegram_sensors(hass, client, entry, listener) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, entry)
+    assert state(hass, "water") == "33.692"
+    assert state(hass, "breaker") == "closed"
+    registry = er.async_get(hass)
+    for key in (
+        "limiter_threshold",
+        "fuse_threshold",
+    ):  # 999.9 kW / 999 A mean "no limit"
+        assert (
+            registry.async_get_entity_id(
+                "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+            )
+            is None
+        )
+    entity_id = registry.async_get_entity_id(
+        "sensor", "mygrid_voltbridge", f"{SERIAL}_peak_demand"
+    )
+    history = hass.states.get(entity_id).attributes["history"]
+    assert [item["power"] for item in history] == [2780, 3576, 2811]
+    assert history[0]["peak_at"] == "2026-07-19T14:15:00+00:00"
+
+
+async def test_real_limits_create_disabled_diagnostics(
+    hass, client, entry, listener
+) -> None:  # type: ignore[no-untyped-def]
+    telegram = make_telegram()
+    object.__setattr__(telegram, "limiter_threshold", 5750)
+    object.__setattr__(telegram, "fuse_threshold", 25)
+    client.async_get_telegram.return_value = telegram
+    await setup(hass, entry)
+    registry = er.async_get(hass)
+    for key in ("limiter_threshold", "fuse_threshold"):
+        entity_id = registry.async_get_entity_id(
+            "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+        )
+        assert registry.async_get(entity_id).disabled_by is not None
+
+
+async def test_telegram_failures_never_break_the_snapshot(
+    hass, client, entry, listener
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, entry)
+    coordinator = entry.runtime_data
+    client.async_get_telegram.side_effect = VoltBridgeConnectionError("flaky")
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    await hass.async_block_till_done()
+    assert state(hass, "net_power") == "261"  # snapshot still available
+    assert coordinator.telegram is not None  # last good telegram kept
+    assert state(hass, "water") == "33.692"
+    client.async_get_telegram.side_effect = VoltBridgeUnsupportedError("404")
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=62))
+    await hass.async_block_till_done()
+    assert coordinator.telegram is None
+    assert state(hass, "water") == "unknown"
+
+
+async def test_no_telegram_support_skips_those_sensors(
+    hass, client, entry, listener
+) -> None:  # type: ignore[no-untyped-def]
+    client.async_get_telegram.side_effect = VoltBridgeUnsupportedError("404")
+    await setup(hass, entry)
+    registry = er.async_get(hass)
+    for key in ("water", "breaker"):
+        assert (
+            registry.async_get_entity_id(
+                "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+            )
+            is None
+        )
+    assert state(hass, "net_power") == "261"

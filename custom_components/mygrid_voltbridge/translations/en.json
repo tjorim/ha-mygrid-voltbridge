@@ -86,7 +86,7 @@
         "name": "Energy exported (night)"
       },
       "avg_demand": {
-        "name": "Average demand"
+        "name": "Current average demand"
       },
       "peak_demand": {
         "name": "Peak demand"
@@ -115,6 +115,23 @@
       },
       "phase_export_power": {
         "name": "Export power {phase}"
+      },
+      "water": {
+        "name": "Water"
+      },
+      "breaker": {
+        "name": "Breaker",
+        "state": {
+          "open": "Open",
+          "closed": "Closed",
+          "ready_to_reconnect": "Ready to reconnect"
+        }
+      },
+      "limiter_threshold": {
+        "name": "Limiter threshold"
+      },
+      "fuse_threshold": {
+        "name": "Fuse threshold"
       }
     }
   },
