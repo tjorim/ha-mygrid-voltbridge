@@ -1,0 +1,7 @@
+# Minimal configuration for scripts/develop.
+default_config:
+
+logger:
+  default: info
+  logs:
+    custom_components.mygrid_voltbridge: debug

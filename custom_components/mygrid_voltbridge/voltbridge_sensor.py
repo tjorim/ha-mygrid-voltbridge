@@ -258,11 +258,13 @@ class VoltBridgeSensor(VoltBridgeEntity, SensorEntity):
         coordinator: VoltBridgeCoordinator,
         description: VoltBridgeSensorDescription,
     ) -> None:
+        """Initialize the VoltBridgeSensor."""
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
     @property
     def native_value(self) -> Value:
+        """Return the value read from the merged snapshot."""
         return self.entity_description.value_fn(self.coordinator.data)
 
     @property
@@ -293,11 +295,13 @@ class VoltBridgeTelegramSensor(VoltBridgeEntity, SensorEntity):
         coordinator: VoltBridgeCoordinator,
         description: VoltBridgeTelegramDescription,
     ) -> None:
+        """Initialize the VoltBridgeTelegramSensor."""
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
     @property
     def native_value(self) -> Value:
+        """Return the value read from the raw telegram, if there is one."""
         telegram = self.coordinator.telegram
         return None if telegram is None else self.entity_description.value_fn(telegram)
 
@@ -312,10 +316,12 @@ class VoltBridgePhaseSensor(VoltBridgeEntity, SensorEntity):
         coordinator: VoltBridgeCoordinator,
         description: VoltBridgePhaseDescription,
     ) -> None:
+        """Initialize the VoltBridgePhaseSensor."""
         super().__init__(coordinator, description.key)
         self.entity_description = description
 
     @property
     def native_value(self) -> int | float | None:
+        """Return the value of this phase, unknown if the meter dropped it."""
         phase = self.coordinator.data.phases.get(self.entity_description.phase)
         return None if phase is None else self.entity_description.value_fn(phase)

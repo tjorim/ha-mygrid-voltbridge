@@ -14,6 +14,7 @@ class VoltBridgeEntity(CoordinatorEntity[VoltBridgeCoordinator]):
     _attr_has_entity_name = True
 
     def __init__(self, coordinator: VoltBridgeCoordinator, key: str) -> None:
+        """Initialize the VoltBridgeEntity."""
         super().__init__(coordinator)
         serial = coordinator.data.meter_serial
         self._attr_unique_id = f"{serial}_{key}"

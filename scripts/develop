@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Run a real Home Assistant with this integration for manual testing.
+#
+# The component stays in <root>/custom_components/mygrid_voltbridge and the Home Assistant
+# configuration lives in <root>/config, without symlinks: putting the repository
+# root on PYTHONPATH makes `custom_components` importable from here.
+set -e
+
+cd "$(dirname "$0")/.."
+
+# Create the config directory on first use.
+if [[ ! -d "${PWD}/config" ]]; then
+    mkdir -p "${PWD}/config"
+    uv run hass --config "${PWD}/config" --script ensure_config
+fi
+
+export PYTHONPATH="${PYTHONPATH}:${PWD}"
+
+# The first start installs the requirements of the default integrations, so it
+# needs network access. Open http://localhost:8123 afterwards.
+uv run hass --config "${PWD}/config" --debug

@@ -16,6 +16,7 @@ TO_REDACT = {CONF_HOST, "meter_serial"}
 async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, entry: VoltBridgeConfigEntry
 ) -> dict[str, Any]:
+    """Return the redacted entry data and the latest snapshot."""
     coordinator = entry.runtime_data
     return {
         "entry": async_redact_data(dict(entry.data), TO_REDACT),

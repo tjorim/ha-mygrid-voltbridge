@@ -39,6 +39,7 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
     config_entry: VoltBridgeConfigEntry
 
     def __init__(self, hass: HomeAssistant, entry: VoltBridgeConfigEntry) -> None:
+        """Initialize the VoltBridgeCoordinator."""
         super().__init__(hass, LOGGER, config_entry=entry, name=DOMAIN)
         self.client = VoltBridgeClient(
             entry.data[CONF_HOST], async_get_clientsession(hass)

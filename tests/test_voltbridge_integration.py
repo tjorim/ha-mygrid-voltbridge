@@ -205,9 +205,8 @@ async def test_diagnostics_redacts_identifiers(
     assert result["data"]["meter_serial"] == "**REDACTED**"
     assert result["data"]["import_power"] == 261
     assert {c["kind"] for c in result["telegram"]["channels"]} == {"gas", "water"}
-    assert "objects" not in result["telegram"] and "equipment" not in str(
-        result["telegram"]
-    )
+    assert "objects" not in result["telegram"]
+    assert "equipment" not in str(result["telegram"])
 
 
 async def test_device_registry_and_disabled_defaults(

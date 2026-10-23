@@ -10,3 +10,7 @@ htmlcov/
 *.egg-info/
 dist/
 build/
+
+# Home Assistant state created by scripts/develop
+config/*
+!config/configuration.yaml

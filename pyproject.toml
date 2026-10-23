@@ -21,8 +21,9 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = "--strict-markers --cov=custom_components.mygrid_voltbridge --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
+addopts = "-m 'not live' --strict-markers --cov=custom_components.mygrid_voltbridge --cov-report=term-missing --cov-report=xml --cov-fail-under=95"
 filterwarnings = ["error"]
+markers = ["live: runs the real integration against a real device (set VOLTBRIDGE_HOST); excluded from ordinary runs"]
 
 [tool.coverage.run]
 branch = true
@@ -34,8 +35,50 @@ target-version = "py314"
 extend-exclude = ["custom_components/mygrid_voltbridge/vendor"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "ASYNC"]
-ignore = ["E501"]
+select = ["ALL"]
+ignore = [
+  "ANN401",  # typing.Any is used for config-entry plumbing
+  "COM812",  # incompatible with the formatter
+  "CPY001",
+  "D203",
+  "D213",
+  "E501",
+  "ISC001",  # incompatible with the formatter
+  "TC001",
+  "TC002",
+  "TC003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The offline suite is not annotated or documented line by line.
+"tests/**" = [
+  "ANN",
+  "ARG",
+  "D",
+  "INP001",
+  "PLC0415",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
+  "PLR0917",
+  "PLR2004",
+  "PT011",
+  "S101",
+  "SLF001",
+]
+"scripts/**" = ["INP001", "S101", "T201"]
+"conftest.py" = ["D", "INP001"]
+# Home Assistant fixes the signatures of platform setup, flow steps and options.
+"custom_components/**" = ["ARG"]
+
+[tool.ruff.lint.flake8-pytest-style]
+fixture-parentheses = false
+
+[tool.ruff.lint.mccabe]
+max-complexity = 25
+
+[tool.ruff.lint.pyupgrade]
+keep-runtime-typing = true
 
 [tool.mypy]
 python_version = "3.14"

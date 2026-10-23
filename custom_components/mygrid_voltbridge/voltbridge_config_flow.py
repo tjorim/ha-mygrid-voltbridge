@@ -81,7 +81,8 @@ class VoltBridgeFlow(ConfigFlow):
         try:
             info = VoltBridgeInfo.from_properties(
                 cast(
-                    Mapping[str | bytes, str | bytes | None], discovery_info.properties
+                    "Mapping[str | bytes, str | bytes | None]",
+                    discovery_info.properties,
                 )
             )
         except VoltBridgeError:
@@ -117,7 +118,7 @@ class VoltBridgeFlow(ConfigFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Confirm setting up a discovered VoltBridge."""
-        assert self._host is not None
+        assert self._host is not None  # noqa: S101 - set by the discovery step
         if user_input is not None:
             data = {CONF_DEVICE: DEVICE_VOLTBRIDGE, CONF_HOST: self._host}
             if self._mac:

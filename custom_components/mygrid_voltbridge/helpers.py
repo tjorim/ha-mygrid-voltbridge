@@ -29,12 +29,13 @@ def normalize_host(value: str) -> str:
             or any(char.isspace() for char in host)
             or any(char in host for char in "/:@[]")
         ):
-            raise vol.Invalid("Enter a hostname or IP address") from None
+            msg = "Enter a hostname or IP address"
+            raise vol.Invalid(msg) from None
         return host
 
 
 def interval_schema(current: int, minimum: int, maximum: int) -> vol.Schema:
-    """Schema of the polling-interval option."""
+    """Return the schema of the polling-interval option."""
     return vol.Schema(
         {
             vol.Required(CONF_POLL_INTERVAL, default=current): vol.All(

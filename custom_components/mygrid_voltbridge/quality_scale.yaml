@@ -21,7 +21,7 @@ rules:
     comment: tests/test_config_flow.py covers success, duplicate, failure, options and reconfiguration paths. tests/test_voltbridge_config_flow.py and tests/test_umbrella.py cover the VoltBridge and menu paths.
   dependency-transparency:
     status: done
-    comment: Developer README and draft user documentation and manifest disclose mygrid-modbus==0.1.0, the shared modbus-connection transport and publication prerequisite. mygrid-voltbridge==0.3.0 is likewise disclosed; both libraries have public source and CI but are not yet on PyPI
+    comment: Developer README and draft user documentation and manifest disclose mygrid-modbus==0.1.0, the shared modbus-connection transport and publication prerequisite. mygrid-voltbridge==0.3.0 is likewise disclosed; both libraries have public source and CI and are published on PyPI (mygrid-modbus 0.1.0, mygrid-voltbridge 0.3.0)
   docs-actions:
     status: done
     comment: Developer README and draft user documentation explains number.set_value and button.press, confirmation and uncertainty.

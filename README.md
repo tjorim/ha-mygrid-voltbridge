@@ -83,3 +83,7 @@ uv run python scripts/build_release.py
 ```
 
 The vendored files are under `custom_components/mygrid_voltbridge/vendor/mygrid_voltbridge`, with the license and an `origin.json` recording version, source commits and per-file SHA-256 hashes. Do not edit generated files here: change the library in `python-mygrid-voltbridge` or the integration in `ha-mygrid-core`, then run `uv run python scripts/sync_hacs.py` (and `--check`) in `ha-mygrid-core`. Entries of this package do not migrate to the core integration later; add the device again there. Manufacturer-approved brand art is still pending, so HACS's brand check is exempted. The earlier prototype of this repository used the same domain, so its config entries keep working.
+
+To try the integration in a real Home Assistant, run `scripts/develop`: it starts Home Assistant with the component importable from this checkout and a configuration in `config/` (ignored by git). The first start installs the default integrations' requirements and needs network access; then open http://localhost:8123.
+
+A live end-to-end test runs the integration inside the Home Assistant test runtime against a real device: `VOLTBRIDGE_HOST=192.168.0.45 uv run pytest -m live --no-cov`. It is excluded from ordinary runs.

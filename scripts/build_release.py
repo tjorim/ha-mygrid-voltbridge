@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
+    """Build the manual-install ZIP in dist/."""
     component = ROOT / "custom_components/mygrid_voltbridge"
     version = json.loads((component / "manifest.json").read_text())["version"]
     output = ROOT / "dist" / f"mygrid-voltbridge-{version}.zip"
