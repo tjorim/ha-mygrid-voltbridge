@@ -32,3 +32,5 @@ jobs:
       - uses: hacs/action@d556e736723344f83838d08488c983a15381059a
         with:
           category: integration
+          # No manufacturer artwork rights were supplied, so no brand assets.
+          ignore: brands
