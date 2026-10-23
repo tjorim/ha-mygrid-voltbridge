@@ -18,7 +18,7 @@
     "voltbridge_sensor.py": "8d740e2aa1c7cc555e00f1f7b2a3e2cd07827dbafdc410074db67a2d1069e20a",
     "voltbridge_setup.py": "2a32e25c7e841ce2ff6e547f0194b1defe356a1469dc42055e1bcca6ea8e8d85"
   },
-  "core_commit": "e403a449d9b72614387074a1491cca3230ac417e",
+  "core_commit": "583b639e4b28a400924a34d27f70c314566151fe",
   "library": "mygrid-voltbridge",
   "library_commit": "e90c2505529733f99aa60dd72b9ce3c55faa60e5",
   "sha256": {
