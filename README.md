@@ -2,7 +2,7 @@
 
 Home Assistant custom integration for the **MyGrid VoltBridge** P1 meter adapter. It talks to the device on your LAN only (no cloud, no MQTT broker needed): live values by the device's UDP broadcast and the rest over its local HTTP API.
 
-Requires **Home Assistant 2026.10.2 or newer** (Python 3.14.2+). The package includes a generated, licensed copy of the independent [`mygrid-voltbridge`](https://github.com/tjorim/mygrid-voltbridge) library, so no PyPI install is needed. This is a community integration; it has **not** received an official Home Assistant quality rating (see [quality tracking](custom_components/mygrid_voltbridge/quality_scale.yaml)). The device API is reverse-engineered and unofficial, and was checked against one single-phase meter on firmware build 15.6.
+Requires **Home Assistant 2026.10.2 or newer** (Python 3.14.2+). The package includes a generated, licensed copy of the independent [`mygrid-voltbridge`](https://github.com/tjorim/python-mygrid-voltbridge) library, so no PyPI install is needed. This is a community integration; it has **not** received an official Home Assistant quality rating (see [quality tracking](custom_components/mygrid_voltbridge/quality_scale.yaml)). The device API is reverse-engineered and unofficial, and was checked against one single-phase meter on firmware build 15.6.
 
 > The MyGrid **ModuleTwo** battery has its own repository, [ha-mygrid-modbus](https://github.com/tjorim/ha-mygrid-modbus): HACS allows one integration per repository, so the two devices are separate integrations here. A combined integration for Home Assistant core is developed in [ha-mygrid-core](https://github.com/tjorim/ha-mygrid-core).
 
@@ -65,7 +65,7 @@ This is a generated community-testing package. HACS allows one integration per r
 
 | Repository | Role |
 | --- | --- |
-| `mygrid-voltbridge` | Standalone client library: HTTP API, DSMR telegram, UDP decoder, live smoke tests |
+| `python-mygrid-voltbridge` | Standalone client library (PyPI package `mygrid-voltbridge`): HTTP API, DSMR telegram, UDP decoder, live smoke tests |
 | `ha-mygrid-core` | Canonical umbrella integration (domain `mygrid`) shaped for Home Assistant core, plus the generator for the HACS packages |
 | `ha-mygrid-voltbridge` | This HACS package: domain `mygrid_voltbridge`, generated adapter code and the byte-for-byte vendored library |
 | `ha-mygrid-modbus` | The matching HACS package for the ModuleTwo battery |
@@ -82,4 +82,4 @@ uv run python scripts/validate_metadata.py
 uv run python scripts/build_release.py
 ```
 
-The vendored files are under `custom_components/mygrid_voltbridge/vendor/mygrid_voltbridge`, with the license and an `origin.json` recording version, source commits and per-file SHA-256 hashes. Do not edit generated files here: change the library in `mygrid-voltbridge` or the integration in `ha-mygrid-core`, then run `uv run python scripts/sync_hacs.py` (and `--check`) in `ha-mygrid-core`. Entries of this package do not migrate to the core integration later; add the device again there. Manufacturer-approved brand art is still pending, so HACS's brand check is exempted. The earlier prototype of this repository used the same domain, so its config entries keep working.
+The vendored files are under `custom_components/mygrid_voltbridge/vendor/mygrid_voltbridge`, with the license and an `origin.json` recording version, source commits and per-file SHA-256 hashes. Do not edit generated files here: change the library in `python-mygrid-voltbridge` or the integration in `ha-mygrid-core`, then run `uv run python scripts/sync_hacs.py` (and `--check`) in `ha-mygrid-core`. Entries of this package do not migrate to the core integration later; add the device again there. Manufacturer-approved brand art is still pending, so HACS's brand check is exempted. The earlier prototype of this repository used the same domain, so its config entries keep working.
