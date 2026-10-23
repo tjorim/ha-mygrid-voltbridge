@@ -1,0 +1,46 @@
+[project]
+name = "ha-mygrid-voltbridge"
+version = "0.1.0"
+description = "Local MyGrid VoltBridge P1 meter integration for Home Assistant"
+requires-python = ">=3.14.2"
+license = "MIT"
+dependencies = []
+
+[dependency-groups]
+dev = [
+  "mygrid-voltbridge @ git+https://github.com/tjorim/mygrid-voltbridge@v0.1.0",
+  "pytest-homeassistant-custom-component==0.13.373",
+  "ruff==0.17.2",
+  "mypy==2.4.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--strict-markers --cov=custom_components.mygrid_voltbridge --cov-report=term-missing --cov-fail-under=95"
+filterwarnings = ["error"]
+
+[tool.coverage.run]
+branch = true
+source = ["custom_components.mygrid_voltbridge"]
+
+[tool.ruff]
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+follow_imports = "silent"
+files = ["custom_components/mygrid_voltbridge"]
+mypy_path = "."
+explicit_package_bases = true
+namespace_packages = true
