@@ -1,4 +1,4 @@
-name: Validate
+name: Validate HACS package
 on:
   push:
   pull_request:
@@ -19,6 +19,12 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy
       - run: uv run pytest
+      - run: uv run python scripts/validate_metadata.py
+      - run: uv run python scripts/build_release.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mygrid-community-test
+          path: dist/*.zip
   hassfest:
     runs-on: ubuntu-latest
     steps:
@@ -32,5 +38,6 @@ jobs:
       - uses: hacs/action@d556e736723344f83838d08488c983a15381059a
         with:
           category: integration
-          # No manufacturer artwork rights were supplied, so no brand assets.
+          comment: false
+          # Manufacturer-approved artwork has not been supplied.
           ignore: brands

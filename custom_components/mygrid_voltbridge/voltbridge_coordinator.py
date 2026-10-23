@@ -12,7 +12,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from mygrid_voltbridge import (
+from .const import CONF_POLL_INTERVAL, DOMAIN, VOLTBRIDGE_DEFAULT_POLL_INTERVAL
+from .vendor.mygrid_voltbridge import (
     BroadcastStream,
     P1Broadcast,
     P1Data,
@@ -23,8 +24,6 @@ from mygrid_voltbridge import (
     VoltBridgeUnsupportedError,
     async_listen,
 )
-
-from .const import CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL, DOMAIN
 
 LOGGER = logging.getLogger(__name__)
 type VoltBridgeConfigEntry = ConfigEntry[VoltBridgeCoordinator]
@@ -45,7 +44,9 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
             entry.data[CONF_HOST], async_get_clientsession(hass)
         )
         self._poll_interval = timedelta(
-            seconds=entry.options.get(CONF_POLL_INTERVAL, DEFAULT_POLL_INTERVAL)
+            seconds=entry.options.get(
+                CONF_POLL_INTERVAL, VOLTBRIDGE_DEFAULT_POLL_INTERVAL
+            )
         )
         self._cancel_poll: CALLBACK_TYPE | None = None
         self.telegram: Telegram | None = None
@@ -64,11 +65,12 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
                 translation_key="no_p1_data",
             )
             raise UpdateFailed(
-                translation_domain=DOMAIN, translation_key="no_data"
+                translation_domain=DOMAIN, translation_key="voltbridge_no_data"
             ) from err
         except VoltBridgeError as err:
             raise UpdateFailed(
-                translation_domain=DOMAIN, translation_key="communication_error"
+                translation_domain=DOMAIN,
+                translation_key="voltbridge_communication_error",
             ) from err
         ir.async_delete_issue(self.hass, DOMAIN, issue_id)
         await self._async_update_telegram()

@@ -3,7 +3,7 @@
   "config": {
     "flow_title": "{name}",
     "step": {
-      "user": {
+      "voltbridge": {
         "title": "Connect to MyGrid VoltBridge",
         "description": "Enter the address of the VoltBridge P1 meter. It must have received at least one P1 telegram.",
         "data": {
@@ -17,7 +17,7 @@
         "title": "MyGrid VoltBridge found",
         "description": "Set up the VoltBridge at {host}?"
       },
-      "reconfigure": {
+      "reconfigure_voltbridge": {
         "title": "Reconfigure MyGrid VoltBridge",
         "data": {
           "host": "Host"
@@ -28,21 +28,21 @@
       }
     },
     "error": {
-      "cannot_connect": "Cannot reach the VoltBridge. Check the address and that it is on the same network.",
-      "no_data": "The VoltBridge is reachable but has not received a P1 telegram yet. Check the P1 cable and try again."
+      "voltbridge_cannot_connect": "Cannot reach the VoltBridge. Check the address and that it is on the same network.",
+      "voltbridge_no_data": "The VoltBridge is reachable but has not received a P1 telegram yet. Check the P1 cable and try again."
     },
     "abort": {
-      "already_configured": "This VoltBridge is already configured.",
-      "cannot_connect": "Cannot reach the discovered VoltBridge.",
-      "no_data": "The discovered VoltBridge has not received a P1 telegram yet.",
+      "already_configured": "This device is already configured.",
+      "reconfigure_successful": "Connection settings updated.",
       "not_voltbridge": "The discovered device is not a VoltBridge.",
       "wrong_device": "That address belongs to a different meter.",
-      "reconfigure_successful": "Connection settings updated."
+      "voltbridge_cannot_connect": "Cannot reach the discovered VoltBridge.",
+      "voltbridge_no_data": "The discovered VoltBridge has not received a P1 telegram yet."
     }
   },
   "options": {
     "step": {
-      "init": {
+      "voltbridge_init": {
         "title": "Polling",
         "description": "Live power arrives by UDP push about once a second. The HTTP snapshot, which carries gas, is refreshed at this interval; it is also the fallback if UDP broadcasts do not reach Home Assistant.",
         "data": {
@@ -55,11 +55,17 @@
     }
   },
   "exceptions": {
-    "communication_error": {
+    "voltbridge_communication_error": {
       "message": "Cannot read the VoltBridge."
     },
-    "no_data": {
+    "voltbridge_no_data": {
       "message": "The VoltBridge has not received a P1 telegram yet."
+    }
+  },
+  "issues": {
+    "no_p1_data": {
+      "title": "VoltBridge receives no P1 data",
+      "description": "The VoltBridge is reachable but has stopped receiving P1 telegrams from the meter. Check that the P1 cable is plugged into the meter's P1 port and that the meter's P1 port is enabled. This issue clears itself when data returns."
     }
   },
   "entity": {
@@ -133,12 +139,6 @@
       "fuse_threshold": {
         "name": "Fuse threshold"
       }
-    }
-  },
-  "issues": {
-    "no_p1_data": {
-      "title": "VoltBridge receives no P1 data",
-      "description": "The VoltBridge is reachable but has stopped receiving P1 telegrams from the meter. Check that the P1 cable is plugged into the meter's P1 port and that the meter's P1 port is enabled. This issue clears itself when data returns."
     }
   }
 }
