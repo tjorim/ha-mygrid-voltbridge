@@ -66,7 +66,7 @@ There are no actions, buttons or controls. The device has no authentication and 
 - *Cannot reach the VoltBridge:* open `http://<address>/` in a browser from the Home Assistant host. The page must load.
 - *No P1 telegram yet / repair "VoltBridge receives no P1 data":* check the P1 cable and that the meter's P1 port is enabled. The repair clears itself.
 - *Values only update every 30 s:* UDP broadcasts are not arriving. Check VLAN and firewall rules for UDP 49491, or use host networking.
-- *Wrong or missing gas:* reload the integration after the gas meter has reported once.
+- *Wrong or missing gas or water:* reload the integration after that meter has reported once.
 - Download **diagnostics** from the device page when reporting a problem; the host and meter serial are redacted.
 
 ## Removal
