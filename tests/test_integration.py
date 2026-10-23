@@ -5,7 +5,9 @@ import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import dt as dt_util
 from mygrid_voltbridge import (
     BroadcastStream,
@@ -52,7 +54,6 @@ async def test_entities_from_first_snapshot(hass, client, entry, listener) -> No
     assert state(hass, "peak_demand_at") == "2026-10-21T18:15:00+00:00"
     assert state(hass, "voltage_l1") == "237.3"
     assert state(hass, "current_l1") == "1.7"
-    assert state(hass, "import_power_l1") == "261"
     registry = er.async_get(hass)
     assert (
         registry.async_get_entity_id(
@@ -190,3 +191,46 @@ async def test_diagnostics_redacts_identifiers(hass, client, entry, listener) ->
     assert result["entry"]["host"] == "**REDACTED**"
     assert result["data"]["meter_serial"] == "**REDACTED**"
     assert result["data"]["import_power"] == 261
+
+
+async def test_device_registry_and_disabled_defaults(
+    hass, client, entry, listener
+) -> None:  # type: ignore[no-untyped-def]
+    entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        entry, data={"host": "192.168.0.45", "mac": "90:70:69:d0:2d:80"}
+    )
+    assert await hass.config_entries.async_setup(entry.entry_id)
+    await hass.async_block_till_done()
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        ("mygrid_voltbridge", SERIAL), entry.entry_id
+    )
+    assert device is not None
+    assert device.configuration_url == "http://192.168.0.45"
+    assert (dr.CONNECTION_NETWORK_MAC, "90:70:69:d0:2d:80") in device.connections
+    registry = er.async_get(hass)
+    for key, disabled in (
+        ("import_power_l1", True),
+        ("export_power_l1", True),
+        ("voltage_l1", False),
+        ("net_power", False),
+    ):
+        entity_id = registry.async_get_entity_id(
+            "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+        )
+        assert (registry.async_get(entity_id).disabled_by is not None) is disabled, key
+
+
+async def test_repair_issue_while_no_p1_data(hass, client, entry, listener) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, entry)
+    issues = ir.async_get(hass)
+    issue_id = f"no_p1_data_{entry.entry_id}"
+    assert issues.async_get_issue("mygrid_voltbridge", issue_id) is None
+    client.async_get_p1_data.side_effect = VoltBridgeNoDataError("none")
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    await hass.async_block_till_done()
+    assert issues.async_get_issue("mygrid_voltbridge", issue_id) is not None
+    client.async_get_p1_data.side_effect = None
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=62))
+    await hass.async_block_till_done()
+    assert issues.async_get_issue("mygrid_voltbridge", issue_id) is None

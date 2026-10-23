@@ -8,6 +8,7 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFl
 from homeassistant.const import CONF_HOST
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
 from mygrid_voltbridge import (
@@ -18,6 +19,7 @@ from mygrid_voltbridge import (
 )
 
 from .const import (
+    CONF_MAC,
     CONF_POLL_INTERVAL,
     DEFAULT_POLL_INTERVAL,
     DOMAIN,
@@ -38,6 +40,7 @@ class VoltBridgeConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         self._host: str | None = None
+        self._mac: str | None = None
         self._title = "MyGrid VoltBridge"
 
     @staticmethod
@@ -83,23 +86,36 @@ class VoltBridgeConfigFlow(ConfigFlow, domain=DOMAIN):
         self, discovery_info: ZeroconfServiceInfo
     ) -> ConfigFlowResult:
         try:
-            VoltBridgeInfo.from_properties(
+            info = VoltBridgeInfo.from_properties(
                 cast(
                     Mapping[str | bytes, str | bytes | None], discovery_info.properties
                 )
             )
         except VoltBridgeError:
             return self.async_abort(reason="not_voltbridge")
-        host = str(discovery_info.ip_address)
+        self.context["title_placeholders"] = {
+            "name": discovery_info.hostname.removesuffix(".local.")
+        }
+        return await self._async_discovered(
+            str(discovery_info.ip_address), info.mac_address
+        )
+
+    async def async_step_dhcp(
+        self, discovery_info: DhcpServiceInfo
+    ) -> ConfigFlowResult:
+        """Follow a known device to a new address."""
+        mac = ":".join(
+            discovery_info.macaddress[i : i + 2] for i in range(0, 12, 2)
+        ).lower()
+        return await self._async_discovered(discovery_info.ip, mac)
+
+    async def _async_discovered(self, host: str, mac: str) -> ConfigFlowResult:
         serial, error = await self._serial(host)
         if serial is None:
             return self.async_abort(reason=error or "cannot_connect")
         await self.async_set_unique_id(serial)
-        self._abort_if_unique_id_configured(updates={CONF_HOST: host})
-        self._host = host
-        self.context["title_placeholders"] = {
-            "name": discovery_info.hostname.removesuffix(".local.")
-        }
+        self._abort_if_unique_id_configured(updates={CONF_HOST: host, CONF_MAC: mac})
+        self._host, self._mac = host, mac
         return await self.async_step_discovery_confirm()
 
     async def async_step_discovery_confirm(
@@ -107,9 +123,10 @@ class VoltBridgeConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         assert self._host is not None
         if user_input is not None:
-            return self.async_create_entry(
-                title=self._title, data={CONF_HOST: self._host}
-            )
+            data = {CONF_HOST: self._host}
+            if self._mac:
+                data[CONF_MAC] = self._mac
+            return self.async_create_entry(title=self._title, data=data)
         self._set_confirm_only()
         return self.async_show_form(
             step_id="discovery_confirm", description_placeholders={"host": self._host}

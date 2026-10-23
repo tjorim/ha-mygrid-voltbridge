@@ -1,0 +1,13 @@
+{
+  "entity": {
+    "sensor": {
+      "tariff": {
+        "default": "mdi:calendar-clock",
+        "state": {
+          "day": "mdi:weather-sunny",
+          "night": "mdi:weather-night"
+        }
+      }
+    }
+  }
+}

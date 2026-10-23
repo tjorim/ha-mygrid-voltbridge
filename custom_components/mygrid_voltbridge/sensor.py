@@ -142,6 +142,7 @@ def _phase_descriptions(phase: int) -> tuple[VoltBridgePhaseDescription, ...]:
         VoltBridgePhaseDescription(
             key=f"import_power{suffix}",
             translation_key="phase_import_power",
+            entity_registry_enabled_default=False,
             translation_placeholders={"phase": f"L{phase}"},
             phase=phase,
             device_class=SensorDeviceClass.POWER,
@@ -152,6 +153,7 @@ def _phase_descriptions(phase: int) -> tuple[VoltBridgePhaseDescription, ...]:
         VoltBridgePhaseDescription(
             key=f"export_power{suffix}",
             translation_key="phase_export_power",
+            entity_registry_enabled_default=False,
             translation_placeholders={"phase": f"L{phase}"},
             phase=phase,
             device_class=SensorDeviceClass.POWER,

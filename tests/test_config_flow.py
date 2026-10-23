@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from mygrid_voltbridge import VoltBridgeConnectionError, VoltBridgeNoDataError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -100,7 +101,7 @@ async def test_zeroconf_flow(
     assert result["step_id"] == "discovery_confirm"
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {})
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["data"] == {"host": "192.168.0.45"}
+    assert result["data"] == {"host": "192.168.0.45", "mac": "90:70:69:d0:2d:80"}
     assert result["result"].unique_id == SERIAL
 
 
@@ -178,3 +179,28 @@ async def test_options(
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["poll_interval"] == 60
+
+
+DHCP = DhcpServiceInfo(
+    ip="192.168.0.99", hostname="voltbridge-d02d80", macaddress="907069d02d80"
+)
+
+
+async def test_dhcp_updates_known_device(
+    hass: HomeAssistant, client: AsyncMock, entry: MockConfigEntry, setup_entry: None
+) -> None:
+    entry.add_to_hass(hass)
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_DHCP}, data=DHCP
+    )
+    assert result["reason"] == "already_configured"
+    assert entry.data["host"] == "192.168.0.99"
+    assert entry.data["mac"] == "90:70:69:d0:2d:80"
+
+
+async def test_dhcp_unreachable(hass: HomeAssistant, client: AsyncMock) -> None:
+    client.async_get_p1_data.side_effect = VoltBridgeConnectionError("x")
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": config_entries.SOURCE_DHCP}, data=DHCP
+    )
+    assert result["reason"] == "cannot_connect"

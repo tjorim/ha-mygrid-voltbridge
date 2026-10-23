@@ -6,7 +6,12 @@
       "user": {
         "title": "Connect to MyGrid VoltBridge",
         "description": "Enter the address of the VoltBridge P1 meter. It must have received at least one P1 telegram.",
-        "data": { "host": "Host" }
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the VoltBridge, for example 192.168.0.45 or voltbridge-D02D80.local."
+        }
       },
       "discovery_confirm": {
         "title": "MyGrid VoltBridge found",
@@ -14,7 +19,12 @@
       },
       "reconfigure": {
         "title": "Reconfigure MyGrid VoltBridge",
-        "data": { "host": "Host" }
+        "data": {
+          "host": "Host"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the VoltBridge, for example 192.168.0.45 or voltbridge-D02D80.local."
+        }
       }
     },
     "error": {
@@ -35,35 +45,83 @@
       "init": {
         "title": "Polling",
         "description": "Live power arrives by UDP push about once a second. The HTTP snapshot, which carries gas, is refreshed at this interval; it is also the fallback if UDP broadcasts do not reach Home Assistant.",
-        "data": { "poll_interval": "Polling interval (seconds)" }
+        "data": {
+          "poll_interval": "Polling interval (seconds)"
+        },
+        "data_description": {
+          "poll_interval": "How often the full HTTP snapshot is read. Live power arrives by UDP push regardless."
+        }
       }
     }
   },
   "exceptions": {
-    "communication_error": { "message": "Cannot read the VoltBridge." },
-    "no_data": { "message": "The VoltBridge has not received a P1 telegram yet." }
+    "communication_error": {
+      "message": "Cannot read the VoltBridge."
+    },
+    "no_data": {
+      "message": "The VoltBridge has not received a P1 telegram yet."
+    }
   },
   "entity": {
     "sensor": {
-      "net_power": { "name": "Net power" },
-      "import_power": { "name": "Import power" },
-      "export_power": { "name": "Export power" },
-      "energy_import_t1": { "name": "Energy imported (day)" },
-      "energy_import_t2": { "name": "Energy imported (night)" },
-      "energy_export_t1": { "name": "Energy exported (day)" },
-      "energy_export_t2": { "name": "Energy exported (night)" },
-      "avg_demand": { "name": "Average demand" },
-      "peak_demand": { "name": "Peak demand" },
-      "peak_demand_at": { "name": "Peak demand time" },
+      "net_power": {
+        "name": "Net power"
+      },
+      "import_power": {
+        "name": "Import power"
+      },
+      "export_power": {
+        "name": "Export power"
+      },
+      "energy_import_t1": {
+        "name": "Energy imported (day)"
+      },
+      "energy_import_t2": {
+        "name": "Energy imported (night)"
+      },
+      "energy_export_t1": {
+        "name": "Energy exported (day)"
+      },
+      "energy_export_t2": {
+        "name": "Energy exported (night)"
+      },
+      "avg_demand": {
+        "name": "Average demand"
+      },
+      "peak_demand": {
+        "name": "Peak demand"
+      },
+      "peak_demand_at": {
+        "name": "Peak demand time"
+      },
       "tariff": {
         "name": "Tariff",
-        "state": { "day": "Day", "night": "Night" }
+        "state": {
+          "day": "Day",
+          "night": "Night"
+        }
       },
-      "gas": { "name": "Gas" },
-      "phase_voltage": { "name": "Voltage {phase}" },
-      "phase_current": { "name": "Current {phase}" },
-      "phase_import_power": { "name": "Import power {phase}" },
-      "phase_export_power": { "name": "Export power {phase}" }
+      "gas": {
+        "name": "Gas"
+      },
+      "phase_voltage": {
+        "name": "Voltage {phase}"
+      },
+      "phase_current": {
+        "name": "Current {phase}"
+      },
+      "phase_import_power": {
+        "name": "Import power {phase}"
+      },
+      "phase_export_power": {
+        "name": "Export power {phase}"
+      }
+    }
+  },
+  "issues": {
+    "no_p1_data": {
+      "title": "VoltBridge receives no P1 data",
+      "description": "The VoltBridge is reachable but has stopped receiving P1 telegrams from the meter. Check that the P1 cable is plugged into the meter's P1 port and that the meter's P1 port is enabled. This issue clears itself when data returns."
     }
   }
 }

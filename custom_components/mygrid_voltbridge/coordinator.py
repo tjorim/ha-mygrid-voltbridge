@@ -7,6 +7,7 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -47,9 +48,18 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         self._cancel_poll: CALLBACK_TYPE | None = None
 
     async def _async_update_data(self) -> P1Data:
+        issue_id = f"no_p1_data_{self.config_entry.entry_id}"
         try:
-            return await self.client.async_get_p1_data()
+            data = await self.client.async_get_p1_data()
         except VoltBridgeNoDataError as err:
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                issue_id,
+                is_fixable=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key="no_p1_data",
+            )
             raise UpdateFailed(
                 translation_domain=DOMAIN, translation_key="no_data"
             ) from err
@@ -57,6 +67,8 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
             raise UpdateFailed(
                 translation_domain=DOMAIN, translation_key="communication_error"
             ) from err
+        ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+        return data
 
     async def async_start(self) -> None:
         """Take the first snapshot, then start push and poll."""

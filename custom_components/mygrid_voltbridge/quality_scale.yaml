@@ -1,0 +1,86 @@
+# Self-assessment against the Home Assistant integration quality scale, modelled
+# on the HomeWizard integration. This is not an official rating: `todo` items
+# block a claim to any tier that includes them.
+rules:
+  # Bronze
+  action-setup:
+    status: exempt
+    comment: The integration provides no actions.
+  appropriate-polling:
+    status: done
+    comment: Live values are pushed over UDP; the HTTP snapshot is polled every 30 s (5-600 s configurable) because the device is a small microcontroller.
+  brands:
+    status: todo
+    comment: No manufacturer artwork rights were supplied; add brand/icon.png once permission exists.
+  common-modules: done
+  config-flow-test-coverage: done
+  config-flow: done
+  dependency-transparency:
+    status: todo
+    comment: The library mygrid-voltbridge has public source and CI but is installed from a GitHub tag, not PyPI. Publishing via trusted publishing is prepared (docs/releasing.md in the library) but not done.
+  docs-actions:
+    status: exempt
+    comment: The integration provides no actions.
+  docs-conditions:
+    status: exempt
+    comment: The integration has no conditions.
+  docs-high-level-description: done
+  docs-installation-instructions: done
+  docs-removal-instructions: done
+  docs-triggers:
+    status: exempt
+    comment: The integration has no triggers.
+  entity-event-setup:
+    status: exempt
+    comment: Entities only read coordinator data; they subscribe to nothing themselves.
+  entity-unique-id: done
+  has-entity-name: done
+  runtime-data: done
+  test-before-configure: done
+  test-before-setup: done
+  unique-config-entry: done
+  # Silver
+  action-exceptions:
+    status: exempt
+    comment: The integration provides no actions.
+  config-entry-unloading: done
+  docs-configuration-parameters: done
+  docs-installation-parameters: done
+  entity-unavailable: done
+  integration-owner: done
+  log-when-unavailable: done
+  parallel-updates: done
+  reauthentication-flow:
+    status: exempt
+    comment: The device API has no authentication.
+  test-coverage: done
+  # Gold
+  devices: done
+  diagnostics: done
+  discovery-update-info: done
+  discovery: done
+  docs-data-update: done
+  docs-examples: done
+  docs-known-limitations: done
+  docs-supported-devices: done
+  docs-supported-functions: done
+  docs-troubleshooting: done
+  docs-use-cases: done
+  dynamic-devices:
+    status: exempt
+    comment: One device per config entry.
+  entity-category: done
+  entity-device-class: done
+  entity-disabled-by-default: done
+  entity-translations: done
+  exception-translations: done
+  icon-translations: done
+  reconfiguration-flow: done
+  repair-issues: done
+  stale-devices:
+    status: exempt
+    comment: One device per config entry.
+  # Platinum
+  async-dependency: done
+  inject-websession: done
+  strict-typing: done
