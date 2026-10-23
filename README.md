@@ -1,5 +1,7 @@
 # ha-mygrid-voltbridge
 
+> **Superseded.** The VoltBridge support in this repository has been merged into the umbrella MyGrid integration (domain `mygrid`), which covers both the VoltBridge and the ModuleTwo battery: install it from [tjorim/ha-mygrid](https://github.com/tjorim/ha-mygrid) (HACS) or follow [tjorim/ha-mygrid-core](https://github.com/tjorim/ha-mygrid-core) (core contribution). This repository was the prototype (domain `mygrid_voltbridge`) and is no longer maintained.
+
 Home Assistant custom integration for the **MyGrid VoltBridge** P1 meter adapter. It talks to the device on your LAN only (no cloud, no MQTT broker needed) using the [`mygrid-voltbridge`](https://github.com/tjorim/mygrid-voltbridge) library.
 
 - **Push first:** live power, voltage and current arrive by the device's UDP broadcast about once a second.
