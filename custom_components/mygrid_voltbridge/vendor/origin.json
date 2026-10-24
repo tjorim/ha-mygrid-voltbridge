@@ -15,9 +15,9 @@
     "strings.json": "13a09a562a9173417591308bec6316ecc378ca7b87733f2fa6787f10f6af9857",
     "translations/en.json": "13a09a562a9173417591308bec6316ecc378ca7b87733f2fa6787f10f6af9857"
   },
-  "core_commit": "2a825edb306ef7f1f491e8047ee63af773bfd601",
+  "core_commit": "38ec6478c64ba92345dc2b2d2aecf93aeb80e5b8",
   "library": "mygrid-voltbridge",
-  "library_commit": "19455f503cdf8d51ad98f84bf62749f2e49fca65",
+  "library_commit": "295ecdb6543d05fcc270fc9c6e4e406ae23e8a07",
   "sha256": {
     "__init__.py": "a9f8c8fab3f5d42a46142ee613db3e3956c9995bf91880bf632224da764bcb13",
     "cli.py": "9f00cd1c15a625a523a20fa70aee72edd51c856cc727e8d423e5f700c451dd80",
