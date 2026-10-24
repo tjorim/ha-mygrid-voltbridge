@@ -11,6 +11,13 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 
+from mygrid_voltbridge import (
+    VoltBridgeClient,
+    VoltBridgeError,
+    VoltBridgeInfo,
+    VoltBridgeNoDataError,
+)
+
 from .const import (
     CONF_DEVICE,
     CONF_MAC,
@@ -22,12 +29,6 @@ from .const import (
     VOLTBRIDGE_MIN_POLL_INTERVAL,
 )
 from .helpers import interval_schema, normalize_host
-from .vendor.mygrid_voltbridge import (
-    VoltBridgeClient,
-    VoltBridgeError,
-    VoltBridgeInfo,
-    VoltBridgeNoDataError,
-)
 
 VOLTBRIDGE_SCHEMA = vol.Schema({vol.Required(CONF_HOST): normalize_host})
 

@@ -10,6 +10,13 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import dt as dt_util
+from mygrid_voltbridge import (
+    BroadcastStream,
+    PhaseData,
+    VoltBridgeConnectionError,
+    VoltBridgeNoDataError,
+    VoltBridgeUnsupportedError,
+)
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -17,13 +24,6 @@ from pytest_homeassistant_custom_component.common import (
 
 from custom_components.mygrid_voltbridge.diagnostics import (
     async_get_config_entry_diagnostics,
-)
-from custom_components.mygrid_voltbridge.vendor.mygrid_voltbridge import (
-    BroadcastStream,
-    PhaseData,
-    VoltBridgeConnectionError,
-    VoltBridgeNoDataError,
-    VoltBridgeUnsupportedError,
 )
 
 from .support import (

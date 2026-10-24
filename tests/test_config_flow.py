@@ -6,13 +6,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-
-from custom_components.mygrid_voltbridge.const import DOMAIN
-from custom_components.mygrid_voltbridge.vendor.mygrid_voltbridge import (
+from mygrid_voltbridge import (
     VoltBridgeConnectionError,
     VoltBridgeNoDataError,
 )
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.mygrid_voltbridge.const import DOMAIN
 
 from .flows import start_voltbridge
 from .support import SERIAL, make_data

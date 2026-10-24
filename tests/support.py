@@ -3,7 +3,7 @@
 from datetime import UTC, datetime
 from pathlib import Path
 
-from custom_components.mygrid_voltbridge.vendor.mygrid_voltbridge import (
+from mygrid_voltbridge import (
     BroadcastStream,
     P1Broadcast,
     P1Data,

@@ -23,9 +23,10 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
+from mygrid_voltbridge import P1Data, P1Status, PhaseData, Telegram
+
 from .coordinator import VoltBridgeConfigEntry, VoltBridgeCoordinator
 from .entity import VoltBridgeEntity
-from .vendor.mygrid_voltbridge import P1Data, P1Status, PhaseData, Telegram
 
 PARALLEL_UPDATES = 0
 

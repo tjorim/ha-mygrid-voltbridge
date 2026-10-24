@@ -7,8 +7,9 @@ from homeassistant.components.diagnostics import async_redact_data
 from homeassistant.const import CONF_HOST
 from homeassistant.core import HomeAssistant
 
+from mygrid_voltbridge import Telegram
+
 from .coordinator import VoltBridgeConfigEntry
-from .vendor.mygrid_voltbridge import Telegram
 
 TO_REDACT = {CONF_HOST, "meter_serial"}
 
