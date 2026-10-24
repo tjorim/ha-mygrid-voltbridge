@@ -1,5 +1,10 @@
 # MyGrid VoltBridge for Home Assistant
 
+## Documentation
+
+See the [MyGrid documentation hub](https://github.com/tjorim/custom-mygrid#readme)
+for device setup guides, protocol references and repository links.
+
 Home Assistant custom integration for the [**MyGrid VoltBridge**](https://moduletwo.mygrid.energy/nl/voltbridge) P1 meter adapter. It talks to the device on your LAN only (no cloud, no MQTT broker needed): live values by the device's UDP broadcast and the rest over its local HTTP API.
 
 Requires **Home Assistant 2026.10.2 or newer** (Python 3.14.2+). The integration uses the independent [`mygrid-voltbridge`](https://github.com/tjorim/python-mygrid-voltbridge) library from PyPI, which Home Assistant installs automatically. This is a community integration; it has **not** received an official Home Assistant quality rating (see [quality tracking](custom_components/mygrid_voltbridge/quality_scale.yaml)). The device API is reverse-engineered and unofficial, and was checked against one single-phase meter on firmware build 15.6.
