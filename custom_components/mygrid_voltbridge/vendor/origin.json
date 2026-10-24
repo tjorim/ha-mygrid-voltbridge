@@ -10,12 +10,12 @@
     "helpers.py": "2a82ba0acb8f256f62ccc4dc37f6b78d5801a8c73f91ecae40e8d4dd55a0ed61",
     "icons.json": "120a1d4ce2aa2da03c52e7fc06b02ec26a27f3ecf23265d243f39fc640deb4c0",
     "manifest.json": "fcc03c8ec7d183b755f87dcc3c31339b3ade7fef32987cc65ff17bdb4008d9cb",
-    "quality_scale.yaml": "a20faea64cc3a1b5c3851acfa7ec0aa23f30e3b8b2859da20f1c4661003e3d55",
+    "quality_scale.yaml": "fa3326fc57f0c1e5aedf013f90389e033700c0f37c5d6f0be081d06d6ce77927",
     "sensor.py": "a8a9752a778560ab0549ccdff99343094cd5465d35d30e9e95d96c7408cecfc6",
     "strings.json": "13a09a562a9173417591308bec6316ecc378ca7b87733f2fa6787f10f6af9857",
     "translations/en.json": "13a09a562a9173417591308bec6316ecc378ca7b87733f2fa6787f10f6af9857"
   },
-  "core_commit": "7c967c8ec9b68e30b2f350a5bec6624481de8b40",
+  "core_commit": "2a825edb306ef7f1f491e8047ee63af773bfd601",
   "library": "mygrid-voltbridge",
   "library_commit": "19455f503cdf8d51ad98f84bf62749f2e49fca65",
   "sha256": {
