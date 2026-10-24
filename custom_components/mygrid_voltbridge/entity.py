@@ -5,7 +5,7 @@ from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, Device
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONF_MAC, DOMAIN
-from .voltbridge_coordinator import VoltBridgeCoordinator
+from .coordinator import VoltBridgeCoordinator
 
 
 class VoltBridgeEntity(CoordinatorEntity[VoltBridgeCoordinator]):

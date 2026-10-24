@@ -25,7 +25,7 @@ from custom_components.mygrid_voltbridge.vendor.mygrid_voltbridge import (
     VoltBridgeUnsupportedError,
 )
 
-from .voltbridge_support import SERIAL, make_broadcast, make_data, make_telegram
+from .support import SERIAL, make_broadcast, make_data, make_telegram
 
 
 def state(hass: HomeAssistant, key: str) -> str | None:
@@ -178,7 +178,7 @@ async def test_polling_only_when_udp_unavailable(
     from unittest.mock import patch
 
     with patch(
-        "custom_components.mygrid_voltbridge.voltbridge_coordinator.async_listen",
+        "custom_components.mygrid_voltbridge.coordinator.async_listen",
         new_callable=AsyncMock,
         side_effect=OSError("in use"),
     ):

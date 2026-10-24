@@ -15,7 +15,7 @@ from custom_components.mygrid_voltbridge.vendor.mygrid_voltbridge import (
 )
 
 from .flows import start_voltbridge
-from .voltbridge_support import SERIAL, make_data
+from .support import SERIAL, make_data
 
 PROPERTIES = {
     "model": "Voltbridge P1 Meter",
