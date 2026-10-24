@@ -6,7 +6,7 @@
     "diagnostics.py": "71f79aa691718f5ecbf03e28b12197e97d63dea283dd0f68204d2b4a78e1338e",
     "helpers.py": "2a82ba0acb8f256f62ccc4dc37f6b78d5801a8c73f91ecae40e8d4dd55a0ed61",
     "icons.json": "120a1d4ce2aa2da03c52e7fc06b02ec26a27f3ecf23265d243f39fc640deb4c0",
-    "manifest.json": "fcc03c8ec7d183b755f87dcc3c31339b3ade7fef32987cc65ff17bdb4008d9cb",
+    "manifest.json": "5823928d4a69fea40382c2ac79accb88e0848fd11144152d57be60531c4bbb31",
     "quality_scale.yaml": "896d3800a46fe73388605b40c540e55c0377f4da3191ec97f7a6e8ef31422b90",
     "sensor.py": "189df0224460ab3c081b64439a9873bdf97d0a5e26348e1438f8b4977db6f621",
     "strings.json": "88372067a0fc5e8e218765a7ee2bbe6ef9c985c18cf394f6f2e3b21d8cdc4200",
@@ -18,7 +18,7 @@
     "voltbridge_sensor.py": "bd33e093e0936f57e5bddeac0c95994057d4b9680286606e6e8898e090c475b3",
     "voltbridge_setup.py": "2a32e25c7e841ce2ff6e547f0194b1defe356a1469dc42055e1bcca6ea8e8d85"
   },
-  "core_commit": "a1df4ad754be87d3bae8497a95c69357e26a8300",
+  "core_commit": "effe0c0172399991855dca9cf8a166bf65dd9917",
   "library": "mygrid-voltbridge",
   "library_commit": "9753f2521903fc35c09c43cf6b2a68f690341ad2",
   "sha256": {
