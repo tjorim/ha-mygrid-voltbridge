@@ -4,10 +4,10 @@ from collections.abc import Callable, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from mygrid_voltbridge import P1Broadcast
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.mygrid_voltbridge.const import DOMAIN
-from custom_components.mygrid_voltbridge.vendor.mygrid_voltbridge import P1Broadcast
 
 from .support import SERIAL, make_data, make_status, make_telegram
 
@@ -65,4 +65,4 @@ def vb_setup_entry() -> Generator[None]:
 
 @pytest.fixture(autouse=True)
 def custom_integrations(enable_custom_integrations):
-    """Enable the generated custom integration in the test runtime."""
+    """Enable the custom integration in the test runtime."""

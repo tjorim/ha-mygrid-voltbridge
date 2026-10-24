@@ -8,6 +8,7 @@ dependencies = []
 
 [dependency-groups]
 dev = [
+  "mygrid-voltbridge==0.4.0",
   "pytest-homeassistant-custom-component==0.13.373",
   "ruff==0.17.2",
   "mypy==2.4.0",
@@ -27,12 +28,10 @@ markers = ["live: runs the real integration against a real device (set VOLTBRIDG
 
 [tool.coverage.run]
 branch = true
-omit = ["custom_components/mygrid_voltbridge/vendor/*"]
 source = ["custom_components.mygrid_voltbridge"]
 
 [tool.ruff]
 target-version = "py314"
-extend-exclude = ["custom_components/mygrid_voltbridge/vendor"]
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -84,5 +83,7 @@ keep-runtime-typing = true
 python_version = "3.14"
 strict = true
 follow_imports = "silent"
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "."
 files = ["custom_components/mygrid_voltbridge"]
-exclude = ["custom_components/mygrid_voltbridge/vendor"]

@@ -12,8 +12,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import CONF_POLL_INTERVAL, DOMAIN, VOLTBRIDGE_DEFAULT_POLL_INTERVAL
-from .vendor.mygrid_voltbridge import (
+from mygrid_voltbridge import (
     BroadcastStream,
     P1Broadcast,
     P1Data,
@@ -25,6 +24,8 @@ from .vendor.mygrid_voltbridge import (
     VoltBridgeUnsupportedError,
     async_listen,
 )
+
+from .const import CONF_POLL_INTERVAL, DOMAIN, VOLTBRIDGE_DEFAULT_POLL_INTERVAL
 
 LOGGER = logging.getLogger(__name__)
 type VoltBridgeConfigEntry = ConfigEntry[VoltBridgeCoordinator]
