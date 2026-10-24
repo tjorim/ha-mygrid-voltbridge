@@ -37,6 +37,17 @@ async def test_real_voltbridge_end_to_end(
     assert imported is not None
     assert float(imported.state) > 0
 
+    wifi = states["wifi_signal"]
+    assert wifi is not None
+    assert -100 <= float(wifi.state) < 0
+    error_rate = states["p1_error_rate"]
+    assert error_rate is not None
+    assert 0 <= float(error_rate.state) <= 100
+    reboot = [name for name in states if name == "reboot"]
+    assert (
+        reboot == []
+    )  # the reboot button is disabled by default and never pressed here
+
     # UDP push: the state is reported again within a few seconds, long before the
     # 30 s poll could do it.
     first = net.last_reported

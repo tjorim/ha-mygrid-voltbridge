@@ -9,7 +9,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.mygrid_voltbridge.const import DOMAIN
 from custom_components.mygrid_voltbridge.vendor.mygrid_voltbridge import P1Broadcast
 
-from .support import SERIAL, make_data, make_telegram
+from .support import SERIAL, make_data, make_status, make_telegram
 
 
 @pytest.fixture
@@ -26,6 +26,7 @@ def vb_client() -> Generator[AsyncMock]:
         instance = AsyncMock()
         instance.async_get_p1_data.return_value = make_data()
         instance.async_get_telegram.return_value = make_telegram()
+        instance.async_get_status.return_value = make_status()
         coordinator_cls.return_value = instance
         yield instance
 

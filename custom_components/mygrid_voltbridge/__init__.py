@@ -8,7 +8,7 @@ from .const import DOMAIN
 from .coordinator import VoltBridgeConfigEntry, VoltBridgeCoordinator
 from .helpers import async_reload_entry
 
-VOLTBRIDGE_PLATFORMS = [Platform.SENSOR]
+VOLTBRIDGE_PLATFORMS = [Platform.SENSOR, Platform.BUTTON]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: VoltBridgeConfigEntry) -> bool:

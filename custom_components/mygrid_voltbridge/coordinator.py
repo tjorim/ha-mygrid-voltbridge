@@ -17,6 +17,7 @@ from .vendor.mygrid_voltbridge import (
     BroadcastStream,
     P1Broadcast,
     P1Data,
+    P1Status,
     Telegram,
     VoltBridgeClient,
     VoltBridgeError,
@@ -51,6 +52,7 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         )
         self._cancel_poll: CALLBACK_TYPE | None = None
         self.telegram: Telegram | None = None
+        self.status: P1Status | None = None
 
     async def _async_update_data(self) -> P1Data:
         issue_id = f"no_p1_data_{self.config_entry.entry_id}"
@@ -75,6 +77,7 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
             ) from err
         ir.async_delete_issue(self.hass, DOMAIN, issue_id)
         await self._async_update_telegram()
+        await self._async_update_status()
         return data
 
     async def _async_update_telegram(self) -> None:
@@ -89,6 +92,19 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
             self.telegram = None
         except VoltBridgeError as err:
             LOGGER.debug("Telegram unavailable, keeping the previous one: %s", err)
+
+    async def _async_update_status(self) -> None:
+        """Read the Wi-Fi signal and P1 packet statistics.
+
+        Optional like the telegram: older firmware may lack the detail, and a
+        failure here keeps the last good reading instead of failing the update.
+        """
+        try:
+            self.status = await self.client.async_get_status()
+        except VoltBridgeUnsupportedError:
+            self.status = None
+        except VoltBridgeError as err:
+            LOGGER.debug("Status unavailable, keeping the previous one: %s", err)
 
     async def async_start(self) -> None:
         """Take the first snapshot, then start push and poll."""
@@ -126,6 +142,9 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
             if (value := getattr(broadcast.data, field.name)) is not None
             and field.name not in ("meter_version", "phases")
         }
+        # The live stream carries the signal strength too: keep it fresh between polls.
+        if broadcast.rssi is not None and self.status is not None:
+            self.status = dataclasses.replace(self.status, rssi=broadcast.rssi)
         # Rebuild phases wholesale so L2/L3 appear and disappear with the meter.
         self.async_set_updated_data(
             dataclasses.replace(self.data, **live, phases=broadcast.data.phases)

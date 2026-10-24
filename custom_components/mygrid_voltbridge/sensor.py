@@ -11,6 +11,8 @@ from homeassistant.components.sensor import (
     SensorStateClass,
 )
 from homeassistant.const import (
+    PERCENTAGE,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     EntityCategory,
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
@@ -23,7 +25,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import VoltBridgeConfigEntry, VoltBridgeCoordinator
 from .entity import VoltBridgeEntity
-from .vendor.mygrid_voltbridge import P1Data, PhaseData, Telegram
+from .vendor.mygrid_voltbridge import P1Data, P1Status, PhaseData, Telegram
 
 PARALLEL_UPDATES = 0
 
@@ -119,6 +121,34 @@ class VoltBridgeTelegramDescription(SensorEntityDescription):
 
     value_fn: Callable[[Telegram], Value]
 
+
+@dataclass(frozen=True, kw_only=True)
+class VoltBridgeStatusDescription(SensorEntityDescription):
+    """A health value of the device; created only if the meter reports it."""
+
+    value_fn: Callable[[P1Status], Value]
+
+
+STATUS_SENSORS = (
+    VoltBridgeStatusDescription(
+        key="wifi_signal",
+        translation_key="wifi_signal",
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda s: s.rssi,
+    ),
+    VoltBridgeStatusDescription(
+        key="p1_error_rate",
+        translation_key="p1_error_rate",
+        native_unit_of_measurement=PERCENTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        suggested_display_precision=1,
+        value_fn=lambda s: s.error_percent,
+    ),
+)
 
 TELEGRAM_SENSORS = (
     VoltBridgeTelegramDescription(
@@ -237,6 +267,12 @@ async def async_setup_entry(
         for description in SENSORS
         if not description.optional or description.value_fn(data) is not None
     ]
+    if (status := coordinator.status) is not None:
+        entities.extend(
+            VoltBridgeStatusSensor(coordinator, description)
+            for description in STATUS_SENSORS
+            if description.value_fn(status) is not None
+        )
     if (telegram := coordinator.telegram) is not None:
         entities.extend(
             VoltBridgeTelegramSensor(coordinator, description)
@@ -307,6 +343,27 @@ class VoltBridgeTelegramSensor(VoltBridgeEntity, SensorEntity):
         """Return the value read from the raw telegram, if there is one."""
         telegram = self.coordinator.telegram
         return None if telegram is None else self.entity_description.value_fn(telegram)
+
+
+class VoltBridgeStatusSensor(VoltBridgeEntity, SensorEntity):
+    """A health value: Wi-Fi signal, or the share of failed P1 telegrams."""
+
+    entity_description: VoltBridgeStatusDescription
+
+    def __init__(
+        self,
+        coordinator: VoltBridgeCoordinator,
+        description: VoltBridgeStatusDescription,
+    ) -> None:
+        """Initialize the VoltBridgeStatusSensor."""
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
+
+    @property
+    def native_value(self) -> Value:
+        """Return the value from the device status, if there is one."""
+        status = self.coordinator.status
+        return None if status is None else self.entity_description.value_fn(status)
 
 
 class VoltBridgePhaseSensor(VoltBridgeEntity, SensorEntity):

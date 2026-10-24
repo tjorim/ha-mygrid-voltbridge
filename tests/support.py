@@ -7,6 +7,7 @@ from custom_components.mygrid_voltbridge.vendor.mygrid_voltbridge import (
     BroadcastStream,
     P1Broadcast,
     P1Data,
+    P1Status,
     PhaseData,
     parse_telegram,
 )
@@ -21,6 +22,19 @@ TELEGRAM_TEXT = (
 
 def make_telegram():  # type: ignore[no-untyped-def]
     return parse_telegram(TELEGRAM_TEXT)
+
+
+def make_status(**overrides: object) -> P1Status:
+    values: dict[str, object] = {
+        "rssi": -79,
+        "p1_fresh": True,
+        "packets_total": 1000,
+        "packets_valid": 990,
+        "packets_error": 10,
+        "error_percent": 1.0,
+    }
+    values.update(overrides)
+    return P1Status(**values)  # type: ignore[arg-type]
 
 
 def make_data(**overrides: object) -> P1Data:

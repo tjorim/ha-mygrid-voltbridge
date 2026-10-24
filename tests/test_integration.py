@@ -5,6 +5,7 @@ import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
@@ -25,7 +26,13 @@ from custom_components.mygrid_voltbridge.vendor.mygrid_voltbridge import (
     VoltBridgeUnsupportedError,
 )
 
-from .support import SERIAL, make_broadcast, make_data, make_telegram
+from .support import (
+    SERIAL,
+    make_broadcast,
+    make_data,
+    make_status,
+    make_telegram,
+)
 
 
 def state(hass: HomeAssistant, key: str) -> str | None:
@@ -330,3 +337,118 @@ async def test_no_telegram_support_skips_those_sensors(
             is None
         )
     assert state(hass, "net_power") == "261"
+
+
+async def test_status_sensors(hass, vb_client, vb_entry, vb_listener) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    assert state(hass, "wifi_signal") == "-79"
+    assert state(hass, "p1_error_rate") == "1.0"
+
+
+async def test_push_keeps_the_signal_strength_fresh(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    broadcast = make_broadcast()
+    object.__setattr__(broadcast, "rssi", -61)
+    vb_listener()(broadcast)
+    await hass.async_block_till_done()
+    assert state(hass, "wifi_signal") == "-61"
+    assert state(hass, "p1_error_rate") == "1.0"  # unchanged until the next poll
+
+
+async def test_status_failures_keep_the_last_reading(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    coordinator = vb_entry.runtime_data
+    vb_client.async_get_status.side_effect = VoltBridgeConnectionError("flaky")
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    await hass.async_block_till_done()
+    assert state(hass, "net_power") == "261"
+    assert coordinator.status is not None
+    vb_client.async_get_status.side_effect = VoltBridgeUnsupportedError("404")
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=62))
+    await hass.async_block_till_done()
+    assert coordinator.status is None
+    assert state(hass, "wifi_signal") == "unknown"
+
+
+async def test_no_status_support_skips_those_sensors(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    vb_client.async_get_status.side_effect = VoltBridgeUnsupportedError("404")
+    await setup(hass, vb_entry)
+    registry = er.async_get(hass)
+    for key in ("wifi_signal", "p1_error_rate"):
+        assert (
+            registry.async_get_entity_id(
+                "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+            )
+            is None
+        )
+    assert state(hass, "net_power") == "261"
+
+
+async def test_status_without_values_creates_no_sensors(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    vb_client.async_get_status.return_value = make_status(rssi=None, error_percent=None)
+    await setup(hass, vb_entry)
+    registry = er.async_get(hass)
+    for key in ("wifi_signal", "p1_error_rate"):
+        assert (
+            registry.async_get_entity_id(
+                "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+            )
+            is None
+        )
+
+
+def reboot_entity(hass: HomeAssistant) -> str:
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id(
+        "button", "mygrid_voltbridge", f"{SERIAL}_reboot"
+    )
+    assert entity_id
+    return entity_id
+
+
+async def test_reboot_button_is_opt_in_and_reboots_once(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    registry = er.async_get(hass)
+    entity_id = reboot_entity(hass)
+    assert registry.async_get(entity_id).disabled_by is not None  # disabled by default
+    registry.async_update_entity(entity_id, disabled_by=None)
+    await hass.config_entries.async_reload(vb_entry.entry_id)
+    await hass.async_block_till_done()
+
+    await hass.services.async_call(
+        "button", "press", {"entity_id": entity_id}, blocking=True
+    )
+    vb_client.async_reboot.assert_awaited_once()
+    assert (
+        state(hass, "net_power") == STATE_UNAVAILABLE
+    )  # until the device answers again
+
+
+async def test_reboot_failure_is_a_translated_error(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    registry = er.async_get(hass)
+    entity_id = reboot_entity(hass)
+    registry.async_update_entity(entity_id, disabled_by=None)
+    await hass.config_entries.async_reload(vb_entry.entry_id)
+    await hass.async_block_till_done()
+    vb_client.async_reboot.side_effect = VoltBridgeConnectionError("down")
+    with pytest.raises(HomeAssistantError) as raised:
+        await hass.services.async_call(
+            "button", "press", {"entity_id": entity_id}, blocking=True
+        )
+    assert raised.value.translation_key == "voltbridge_command_failed"
+    assert (
+        state(hass, "net_power") == "261"
+    )  # a failed command does not take the meter offline

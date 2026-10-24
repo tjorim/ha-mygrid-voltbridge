@@ -30,9 +30,12 @@ Connect the P1 cable before adding the device: entities are created from the fir
 | Tariff | `day` / `night` |
 | Gas, water | m³; only if those meters are connected to the meter's M-Bus. Read by polling; not part of the UDP broadcast |
 | Breaker | Diagnostic: open / closed / ready to reconnect |
+| Wi-Fi signal | Diagnostic, dBm. Kept fresh by the UDP stream (a poor signal explains missed updates) |
+| P1 packet error rate | Diagnostic, %: the share of P1 telegrams that failed their checksum. A rising value points at the P1 cable |
+| Reboot | Button, disabled by default. Restarts the VoltBridge; the entities are unavailable until it answers again |
 | Limiter and fuse threshold | Diagnostic, disabled by default; created only when the meter has real limits (999.9 kW / 999 A mean none) |
 
-There are no actions, buttons or controls: the integration never writes to the device, which has no authentication, so keep it on your trusted LAN.
+The only thing the integration ever sends to the device is the opt-in **Reboot** button (never retried). The device has no authentication, so keep it on your trusted LAN.
 
 ## Examples
 

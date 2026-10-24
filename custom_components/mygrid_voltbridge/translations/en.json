@@ -60,6 +60,9 @@
     },
     "voltbridge_no_data": {
       "message": "The VoltBridge has not received a P1 telegram yet."
+    },
+    "voltbridge_command_failed": {
+      "message": "The VoltBridge could not be rebooted."
     }
   },
   "issues": {
@@ -138,6 +141,17 @@
       },
       "fuse_threshold": {
         "name": "Fuse threshold"
+      },
+      "wifi_signal": {
+        "name": "Wi-Fi signal"
+      },
+      "p1_error_rate": {
+        "name": "P1 packet error rate"
+      }
+    },
+    "button": {
+      "reboot": {
+        "name": "Reboot"
       }
     }
   }
