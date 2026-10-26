@@ -18,13 +18,21 @@ from homeassistant.const import (
     UnitOfElectricCurrent,
     UnitOfElectricPotential,
     UnitOfEnergy,
+    UnitOfInformation,
     UnitOfPower,
     UnitOfVolume,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from mygrid_voltbridge import TARIFF_NAMES, P1Data, P1Status, PhaseData, Telegram
+from mygrid_voltbridge import (
+    TARIFF_NAMES,
+    DeviceInfo,
+    P1Data,
+    P1Status,
+    PhaseData,
+    Telegram,
+)
 
 from .coordinator import VoltBridgeConfigEntry, VoltBridgeCoordinator
 from .entity import VoltBridgeEntity
@@ -131,6 +139,8 @@ SENSORS = (
     _energy("energy_import_t2", lambda d: d.energy_import_t2),
     _energy("energy_export_t1", lambda d: d.energy_export_t1),
     _energy("energy_export_t2", lambda d: d.energy_export_t2),
+    _energy("energy_import", lambda d: d.energy_import),
+    _energy("energy_export", lambda d: d.energy_export),
     _power("avg_import_1min", lambda d: d.avg_import_1min, optional=True),
     _power("avg_export_1min", lambda d: d.avg_export_1min, optional=True),
     _power("avg_demand", lambda d: d.avg_demand, optional=True),
@@ -184,6 +194,13 @@ class VoltBridgeStatusDescription(SensorEntityDescription):
     value_fn: Callable[[P1Status], Value]
 
 
+@dataclass(frozen=True, kw_only=True)
+class VoltBridgeAdapterDescription(SensorEntityDescription):
+    """A health value from the adapter's status page; created only if it reports it."""
+
+    value_fn: Callable[[DeviceInfo], Value]
+
+
 STATUS_SENSORS = (
     VoltBridgeStatusDescription(
         key="wifi_signal",
@@ -203,6 +220,24 @@ STATUS_SENSORS = (
         suggested_display_precision=1,
         value_fn=lambda s: s.error_percent,
     ),
+)
+
+# The status page is scraped HTML, so these are read hourly; both are disabled by default.
+ADAPTER_SENSORS = tuple(
+    VoltBridgeAdapterDescription(
+        key=key,
+        translation_key=key,
+        device_class=SensorDeviceClass.DATA_SIZE,
+        native_unit_of_measurement=UnitOfInformation.BYTES,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=value_fn,
+    )
+    for key, value_fn in (
+        ("free_heap", lambda i: i.free_heap),
+        ("min_free_heap", lambda i: i.min_free_heap),
+    )
 )
 
 TELEGRAM_SENSORS = (
@@ -344,6 +379,12 @@ async def async_setup_entry(
             for description in STATUS_SENSORS
             if description.value_fn(status) is not None
         )
+    if (info := coordinator.device_info) is not None:
+        entities.extend(
+            VoltBridgeAdapterSensor(coordinator, description)
+            for description in ADAPTER_SENSORS
+            if description.value_fn(info) is not None
+        )
     if (telegram := coordinator.telegram) is not None:
         entities.extend(
             VoltBridgeTelegramSensor(coordinator, description)
@@ -436,6 +477,27 @@ class VoltBridgeStatusSensor(VoltBridgeEntity, SensorEntity):
         """Return the value from the device status, if there is one."""
         status = self.coordinator.status
         return None if status is None else self.entity_description.value_fn(status)
+
+
+class VoltBridgeAdapterSensor(VoltBridgeEntity, SensorEntity):
+    """A health value from the adapter's status page, refreshed hourly."""
+
+    entity_description: VoltBridgeAdapterDescription
+
+    def __init__(
+        self,
+        coordinator: VoltBridgeCoordinator,
+        description: VoltBridgeAdapterDescription,
+    ) -> None:
+        """Initialize the VoltBridgeAdapterSensor."""
+        super().__init__(coordinator, description.key)
+        self.entity_description = description
+
+    @property
+    def native_value(self) -> Value:
+        """Return the value from the status page, if it was read."""
+        info = self.coordinator.device_info
+        return None if info is None else self.entity_description.value_fn(info)
 
 
 class VoltBridgePhaseSensor(VoltBridgeEntity, SensorEntity):

@@ -59,6 +59,8 @@ async def test_entities_from_first_snapshot(
     assert state(hass, "export_power") == "0"
     assert state(hass, "energy_import_t1") == "3673.536"
     assert state(hass, "energy_export_t2") == "0.0"
+    assert state(hass, "energy_import") == "8105.988"
+    assert state(hass, "energy_export") == "0.0"
     assert state(hass, "avg_import_1min") == "261"
     assert state(hass, "avg_export_1min") == "0"
     assert state(hass, "gas") == "440.448"
@@ -570,3 +572,44 @@ async def test_reboot_failure_is_a_translated_error(
     assert (
         state(hass, "net_power") == "261"
     )  # a failed command does not take the meter offline
+
+
+async def test_heap_sensors_are_disabled_diagnostics_refreshed_hourly(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    vb_client.async_get_device_info.return_value = make_device_info(
+        free_heap=38000, min_free_heap=768
+    )
+    await setup(hass, vb_entry)
+    registry = er.async_get(hass)
+    for key in ("free_heap", "min_free_heap"):
+        entity_id = registry.async_get_entity_id(
+            "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+        )
+        assert registry.async_get(entity_id).disabled_by is not None
+        registry.async_update_entity(entity_id, disabled_by=None)
+    await hass.config_entries.async_reload(vb_entry.entry_id)
+    await hass.async_block_till_done()
+    assert state(hass, "free_heap") == "38000"
+    assert state(hass, "min_free_heap") == "768"
+    vb_client.async_get_device_info.return_value = make_device_info(
+        free_heap=37000, min_free_heap=512
+    )
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(hours=1, seconds=1))
+    await hass.async_block_till_done()
+    assert state(hass, "free_heap") == "37000"
+    assert state(hass, "min_free_heap") == "512"
+
+
+async def test_no_heap_readings_creates_no_heap_sensors(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    registry = er.async_get(hass)
+    for key in ("free_heap", "min_free_heap"):
+        assert (
+            registry.async_get_entity_id(
+                "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+            )
+            is None
+        )
