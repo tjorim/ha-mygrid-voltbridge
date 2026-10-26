@@ -30,6 +30,7 @@ from .support import (
     SERIAL,
     make_broadcast,
     make_data,
+    make_device_info,
     make_status,
     make_telegram,
 )
@@ -247,6 +248,91 @@ async def test_device_registry_and_disabled_defaults(
             "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
         )
         assert (registry.async_get(entity_id).disabled_by is not None) is disabled, key
+
+
+async def test_device_carries_adapter_identity(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    """Firmware and MAC come from the status page; hardware from discovery."""
+    vb_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        vb_entry,
+        data={**vb_entry.data, "hardware_version": "P1Wifi-rev1"},
+    )
+    assert await hass.config_entries.async_setup(vb_entry.entry_id)
+    await hass.async_block_till_done()
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        ("mygrid_voltbridge", SERIAL), vb_entry.entry_id
+    )
+    assert device.sw_version == "app:build-15.6, idf:v6.0.1, date:202609272035"
+    assert device.hw_version == "P1Wifi-rev1"
+    assert device.serial_number == "90:70:69:d0:2d:80"
+    assert (dr.CONNECTION_NETWORK_MAC, "90:70:69:d0:2d:80") in device.connections
+    vb_client.async_get_device_info.assert_awaited_once()
+
+
+async def test_firmware_update_reaches_device_without_reload(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    registry = dr.async_get(hass)
+    device = registry.async_get_device_by_identifier(
+        ("mygrid_voltbridge", SERIAL), vb_entry.entry_id
+    )
+    assert device.sw_version == "app:build-15.6, idf:v6.0.1, date:202609272035"
+    vb_client.async_get_device_info.return_value = make_device_info(
+        build_info="app:build-15.7"
+    )
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(hours=1, seconds=1))
+    await hass.async_block_till_done()
+    assert registry.async_get(device.id).sw_version == "app:build-15.7"
+    # A failed read keeps what is known.
+    vb_client.async_get_device_info.side_effect = VoltBridgeConnectionError("down")
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(hours=2, seconds=2))
+    await hass.async_block_till_done()
+    assert registry.async_get(device.id).sw_version == "app:build-15.7"
+
+
+async def test_device_without_status_page(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    """Setup survives a failing status page; the meter serial still identifies."""
+    vb_client.async_get_device_info.side_effect = VoltBridgeConnectionError("down")
+    await setup(hass, vb_entry)
+    assert vb_entry.state is ConfigEntryState.LOADED
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        ("mygrid_voltbridge", SERIAL), vb_entry.entry_id
+    )
+    assert device.sw_version is None
+    assert device.serial_number is None
+    assert not device.connections
+
+
+async def test_discovered_mac_wins_over_status_page(
+    hass, vb_client, vb_entry, vb_listener
+) -> None:  # type: ignore[no-untyped-def]
+    vb_client.async_get_device_info.return_value = make_device_info(
+        mac_address="aa:bb:cc:dd:ee:ff"
+    )
+    vb_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        vb_entry, data={**vb_entry.data, "mac": "90:70:69:d0:2d:80"}
+    )
+    assert await hass.config_entries.async_setup(vb_entry.entry_id)
+    await hass.async_block_till_done()
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        ("mygrid_voltbridge", SERIAL), vb_entry.entry_id
+    )
+    assert device.serial_number == "90:70:69:d0:2d:80"
+
+
+async def test_meter_identity_sensors(hass, vb_client, vb_entry, vb_listener) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    telegram = make_telegram()
+    assert state(hass, "meter_model") == telegram.meter_model
+    assert state(hass, "dsmr_version") == telegram.dsmr_version
+    assert telegram.meter_model
+    assert telegram.dsmr_version
 
 
 async def test_repair_issue_while_no_p1_data(

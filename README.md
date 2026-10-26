@@ -34,11 +34,14 @@ Connect the P1 cable before adding the device: entities are created from the fir
 | Current average demand, peak demand, peak demand time | Quarter-hour average and the month's peak (capacity tariff). The peak sensor carries the monthly peak history as the `history` attribute |
 | Tariff | `day` / `night` |
 | Gas, water | m³; only if those meters are connected to the meter's M-Bus. Read by polling; not part of the UDP broadcast |
+| Meter model, DSMR version | Diagnostic: what the meter reports in its telegram header |
 | Breaker | Diagnostic: open / closed / ready to reconnect |
 | Wi-Fi signal | Diagnostic, dBm. Kept fresh by the UDP stream (a poor signal explains missed updates) |
 | P1 packet error rate | Diagnostic, %: the share of P1 telegrams that failed their checksum. A rising value points at the P1 cable |
 | Reboot | Button, disabled by default. Restarts the VoltBridge; the entities are unavailable until it answers again |
 | Limiter and fuse threshold | Diagnostic, disabled by default; created only when the meter has real limits (999.9 kW / 999 A mean none) |
+
+The device page shows the adapter's firmware build (read from its status page and refreshed hourly), its MAC address as serial number, and the hardware revision when the device was discovered over mDNS.
 
 The only thing the integration ever sends to the device is the opt-in **Reboot** button (never retried). The device has no authentication, so keep it on your trusted LAN.
 

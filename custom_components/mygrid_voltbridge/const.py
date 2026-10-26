@@ -9,6 +9,7 @@ DEVICE_VOLTBRIDGE = "voltbridge"
 
 CONF_POLL_INTERVAL = "poll_interval"
 CONF_MAC = "mac"
+CONF_HARDWARE_VERSION = "hardware_version"
 
 # ModuleTwo battery (Modbus TCP)
 DEFAULT_PORT = 502

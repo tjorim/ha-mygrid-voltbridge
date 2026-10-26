@@ -171,6 +171,18 @@ TELEGRAM_SENSORS = (
         ),
     ),
     VoltBridgeTelegramDescription(
+        key="meter_model",
+        translation_key="meter_model",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda t: t.meter_model,
+    ),
+    VoltBridgeTelegramDescription(
+        key="dsmr_version",
+        translation_key="dsmr_version",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda t: t.dsmr_version,
+    ),
+    VoltBridgeTelegramDescription(
         key="limiter_threshold",
         translation_key="limiter_threshold",
         device_class=SensorDeviceClass.POWER,

@@ -137,6 +137,12 @@
           "ready_to_reconnect": "Ready to reconnect"
         }
       },
+      "meter_model": {
+        "name": "Meter model"
+      },
+      "dsmr_version": {
+        "name": "DSMR version"
+      },
       "limiter_threshold": {
         "name": "Limiter threshold"
       },
