@@ -37,7 +37,7 @@ Connect the P1 cable before adding the device: entities are created from the fir
 | Import / export power per phase | Disabled by default |
 | Current average demand, peak demand, peak demand time | Quarter-hour average and the month's peak (capacity tariff). The peak sensor carries the monthly peak history as the `history` attribute |
 | Tariff | `day` / `night` |
-| Gas, water | m³; only if those meters are connected to the meter's M-Bus. Read by polling; not part of the UDP broadcast. The `last_reading` attribute holds the time of the meter's own reading |
+| Gas, water volume | m³; only if those meters are connected to the meter's M-Bus. Read by polling; not part of the UDP broadcast. The `last_reading` attribute holds the time of the meter's own reading |
 | Gas and water valve | Diagnostic; open, closed or ready to reconnect, if the M-Bus meter reports a valve |
 | Meter model, DSMR version | Diagnostic: what the meter reports in its telegram header |
 | Breaker | Diagnostic: open / closed / ready to reconnect |
@@ -47,13 +47,15 @@ Connect the P1 cable before adding the device: entities are created from the fir
 | Reboot | Button, disabled by default. Restarts the VoltBridge; the entities are unavailable until it answers again |
 | Limiter and fuse threshold | Diagnostic, disabled by default; created only when the meter has real limits (999.9 kW / 999 A mean none) |
 
-The device page shows the adapter's firmware build (read from its status page and refreshed hourly), its MAC address as serial number, and the hardware revision when the device was discovered over mDNS.
+Each gas or water meter gets a device of its own (*Gas meter*, *Water meter*) next to the adapter, identified by the meter's equipment ID (or its M-Bus channel when it reports none). Its volume, valve and `last_reading` live there; everything else stays on the adapter. If a meter is replaced or first appears after setup, the entry reloads by itself within one poll interval. A replaced meter leaves its old device behind; delete it from the device page.
+
+The adapter's device page shows its firmware build (read from its status page and refreshed hourly), its MAC address as serial number, and the hardware revision when the device was discovered over mDNS.
 
 The only thing the integration ever sends to the device is the opt-in **Reboot** button (never retried). The device has no authentication, so keep it on your trusted LAN.
 
 ## Examples
 
-- **Energy dashboard:** add *Energy imported* as grid consumption, *Energy exported* as return to grid, and *Gas* or *Water* as sources. The day and night sensors are there if you want the two tariffs as separate sources.
+- **Energy dashboard:** add *Energy imported* as grid consumption, *Energy exported* as return to grid, and the gas or water meter's *Volume* as sources. The day and night sensors are there if you want the two tariffs as separate sources.
 - **Solar-surplus automation:** trigger when *Net power* stays below `-500` W for five minutes, then start the washing machine. Net power is negative while exporting.
 - **Capacity tariff (Belgium):** alert when *Current average demand* (the running quarter-hour average, DSMR `1-0:1.4.0`) climbs towards the month's *Peak demand*.
 
@@ -62,7 +64,7 @@ The only thing the integration ever sends to the device is the opt-in **Reboot**
 - The API is reverse-engineered and unofficial; firmware changes can break it.
 - Export power/energy and phases L2/L3 are decoded by pattern, not verified against hardware (the test meter is single-phase with no export). A phase missing from the live snapshot is read from the raw telegram, so its values update at the polling interval instead of about once a second.
 - Gas and water meters report every few minutes to an hour, so those sensors change at that pace.
-- Entities appear only for what the meter reports when the entry is set up. Reload the entry after connecting a gas or water meter or adding a phase.
+- Entities appear only for what the meter reports when the entry is set up. Reload the entry after adding a phase (a new gas or water meter reloads it by itself).
 - A weak Wi-Fi signal (below about -75 dBm) loses UDP datagrams; check *Wi-Fi signal* first when updates are missed.
 - Do not run this integration and the MyGrid MQTT device for the same meter: the meter appears twice (`sensor.voltbridge_*` and `sensor.mygrid_voltbridge_*`). Pick one source, and use only its entities in the Energy dashboard.
 - One meter per config entry; add the integration again for a second VoltBridge.
