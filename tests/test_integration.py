@@ -59,6 +59,8 @@ async def test_entities_from_first_snapshot(
     assert state(hass, "export_power") == "0"
     assert state(hass, "energy_import_t1") == "3673.536"
     assert state(hass, "energy_export_t2") == "0.0"
+    assert state(hass, "avg_import_1min") == "261"
+    assert state(hass, "avg_export_1min") == "0"
     assert state(hass, "gas") == "440.448"
     assert state(hass, "tariff") == "day"
     assert state(hass, "peak_demand") == "2348"

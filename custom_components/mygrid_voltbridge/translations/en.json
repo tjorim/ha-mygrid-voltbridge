@@ -95,6 +95,12 @@
       "energy_export_t2": {
         "name": "Energy exported (night)"
       },
+      "avg_import_1min": {
+        "name": "Import power (1 min average)"
+      },
+      "avg_export_1min": {
+        "name": "Export power (1 min average)"
+      },
       "avg_demand": {
         "name": "Current average demand"
       },

@@ -131,6 +131,8 @@ SENSORS = (
     _energy("energy_import_t2", lambda d: d.energy_import_t2),
     _energy("energy_export_t1", lambda d: d.energy_export_t1),
     _energy("energy_export_t2", lambda d: d.energy_export_t2),
+    _power("avg_import_1min", lambda d: d.avg_import_1min, optional=True),
+    _power("avg_export_1min", lambda d: d.avg_export_1min, optional=True),
     _power("avg_demand", lambda d: d.avg_demand, optional=True),
     _power(
         "peak_demand",

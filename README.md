@@ -30,6 +30,7 @@ Connect the P1 cable before adding the device: entities are created from the fir
 | Entity | Notes |
 | --- | --- |
 | Net / import / export power | W; positive net power is import |
+| Import / export power (1 min average) | W; a rolling one-minute mean, steadier than the live value for automations |
 | Energy imported / exported (day, night) | `total_increasing`, suitable for the Energy dashboard |
 | Voltage and current per phase | One set per phase the meter reports (L1 verified) |
 | Import / export power per phase | Disabled by default |
