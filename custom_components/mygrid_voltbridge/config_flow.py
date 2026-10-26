@@ -30,7 +30,9 @@ from .const import (
 )
 from .helpers import interval_schema, normalize_host
 
-VOLTBRIDGE_SCHEMA = vol.Schema({vol.Required(CONF_HOST): normalize_host})
+# A plain ``str``: Home Assistant must serialize this schema into the form, and it
+# cannot serialize a custom validator. The host is normalized in the step instead.
+VOLTBRIDGE_SCHEMA = vol.Schema({vol.Required(CONF_HOST): str})
 
 
 class VoltBridgeFlow(ConfigFlow):
@@ -52,13 +54,25 @@ class VoltBridgeFlow(ConfigFlow):
             return None, "voltbridge_no_data"
         return data.meter_serial, None
 
+    @staticmethod
+    def _normalized_host(
+        user_input: dict[str, Any], errors: dict[str, str]
+    ) -> str | None:
+        """Return the submitted host in canonical spelling, or record the error."""
+        try:
+            return normalize_host(user_input[CONF_HOST])
+        except vol.Invalid:
+            errors["base"] = "voltbridge_invalid_host"
+            return None
+
     async def async_step_voltbridge(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
         """Identify the meter by its P1 serial, which survives IP changes."""
         errors: dict[str, str] = {}
-        if user_input is not None:
-            host = VOLTBRIDGE_SCHEMA(user_input)[CONF_HOST]
+        if user_input is not None and (
+            host := self._normalized_host(user_input, errors)
+        ):
             serial, error = await self._voltbridge_serial(host)
             if serial is None:
                 errors["base"] = error or "voltbridge_cannot_connect"
@@ -138,8 +152,9 @@ class VoltBridgeFlow(ConfigFlow):
         """Change the address of an existing VoltBridge entry."""
         entry = self._get_reconfigure_entry()
         errors: dict[str, str] = {}
-        if user_input is not None:
-            host = VOLTBRIDGE_SCHEMA(user_input)[CONF_HOST]
+        if user_input is not None and (
+            host := self._normalized_host(user_input, errors)
+        ):
             serial, error = await self._voltbridge_serial(host)
             if serial is None:
                 errors["base"] = error or "voltbridge_cannot_connect"

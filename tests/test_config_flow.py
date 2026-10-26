@@ -1,9 +1,11 @@
 from ipaddress import ip_address
 from unittest.mock import AsyncMock
 
+import probatio
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.service_info.dhcp import DhcpServiceInfo
 from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from mygrid_voltbridge import (
@@ -48,6 +50,44 @@ async def test_user_flow(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert result["data"] == {"device": "voltbridge", "host": "192.168.0.45"}
     assert result["result"].unique_id == SERIAL
+
+
+def serialized(result) -> list[dict]:
+    """Render a form the way the REST and websocket flow views do for the frontend."""
+    return probatio.to_field_list(
+        result["data_schema"], custom_serializer=cv.custom_serializer
+    )
+
+
+async def test_forms_are_serializable(
+    hass: HomeAssistant,
+    vb_client: AsyncMock,
+    vb_entry: MockConfigEntry,
+    vb_listener,  # type: ignore[no-untyped-def]
+    vb_setup_entry: None,
+) -> None:
+    """The frontend gets 500 instead of a form if a schema cannot be serialized."""
+    user = await start_voltbridge(hass)
+    assert [field["name"] for field in serialized(user)] == ["host"]
+
+    vb_entry.add_to_hass(hass)
+    reconfigure = await vb_entry.start_reconfigure_flow(hass)
+    assert [field["name"] for field in serialized(reconfigure)] == ["host"]
+
+    options = await hass.config_entries.options.async_init(vb_entry.entry_id)
+    assert [field["name"] for field in serialized(options)] == ["poll_interval"]
+
+
+async def test_user_flow_rejects_invalid_host(
+    hass: HomeAssistant, vb_client: AsyncMock, vb_setup_entry: None
+) -> None:
+    result = await start_voltbridge(hass)
+    for host in ("http://192.168.0.45", "192.168.0.45:80", "bad host", "  "):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], {"host": host}
+        )
+        assert result["errors"] == {"base": "voltbridge_invalid_host"}
+    vb_client.async_get_p1_data.assert_not_called()
 
 
 async def test_user_flow_errors_then_recovers(
