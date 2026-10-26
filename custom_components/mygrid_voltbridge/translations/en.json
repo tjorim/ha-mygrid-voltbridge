@@ -28,6 +28,7 @@
       }
     },
     "error": {
+      "voltbridge_invalid_host": "Enter a hostname or an IP address, without a scheme, port or path.",
       "voltbridge_cannot_connect": "Cannot reach the VoltBridge. Check the address and that it is on the same network.",
       "voltbridge_no_data": "The VoltBridge is reachable but has not received a P1 telegram yet. Check the P1 cable and try again."
     },
