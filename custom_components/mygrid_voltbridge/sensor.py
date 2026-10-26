@@ -95,6 +95,8 @@ class VoltBridgeSensorDescription(SensorEntityDescription):
     optional: bool = False
     # Extra state attributes read from the raw telegram.
     attributes_fn: Callable[[Telegram], Attributes] | None = None
+    # The M-Bus meter (gas, water) this belongs to, which has a device of its own.
+    mbus_kind: str | None = None
 
 
 def _power(
@@ -175,6 +177,7 @@ SENSORS = (
         value_fn=lambda d: d.gas,
         optional=True,
         attributes_fn=_last_reading("gas"),
+        mbus_kind="gas",
     ),
 )
 
@@ -185,6 +188,7 @@ class VoltBridgeTelegramDescription(SensorEntityDescription):
 
     value_fn: Callable[[Telegram], Value]
     attributes_fn: Callable[[Telegram], Attributes] | None = None
+    mbus_kind: str | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -249,6 +253,7 @@ TELEGRAM_SENSORS = (
         state_class=SensorStateClass.TOTAL_INCREASING,
         value_fn=lambda t: c.reading if (c := t.water) else None,
         attributes_fn=_last_reading("water"),
+        mbus_kind="water",
     ),
     *(
         VoltBridgeTelegramDescription(
@@ -258,6 +263,7 @@ TELEGRAM_SENSORS = (
             options=list(VALVE_STATES.values()),
             entity_category=EntityCategory.DIAGNOSTIC,
             value_fn=_valve_state(kind),
+            mbus_kind=kind,
         )
         for kind in ("gas", "water")
     ),
@@ -410,7 +416,7 @@ class VoltBridgeSensor(VoltBridgeEntity, SensorEntity):
         description: VoltBridgeSensorDescription,
     ) -> None:
         """Initialize the VoltBridgeSensor."""
-        super().__init__(coordinator, description.key)
+        super().__init__(coordinator, description.key, description.mbus_kind)
         self.entity_description = description
 
     @property
@@ -439,7 +445,7 @@ class VoltBridgeTelegramSensor(VoltBridgeEntity, SensorEntity):
         description: VoltBridgeTelegramDescription,
     ) -> None:
         """Initialize the VoltBridgeTelegramSensor."""
-        super().__init__(coordinator, description.key)
+        super().__init__(coordinator, description.key, description.mbus_kind)
         self.entity_description = description
 
     @property

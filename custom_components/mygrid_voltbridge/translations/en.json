@@ -72,6 +72,14 @@
       "description": "The VoltBridge is reachable but has stopped receiving P1 telegrams from the meter. Check that the P1 cable is plugged into the meter's P1 port and that the meter's P1 port is enabled. This issue clears itself when data returns."
     }
   },
+  "device": {
+    "gas_meter": {
+      "name": "Gas meter"
+    },
+    "water_meter": {
+      "name": "Water meter"
+    }
+  },
   "entity": {
     "sensor": {
       "net_power": {
@@ -124,7 +132,7 @@
         }
       },
       "gas": {
-        "name": "Gas"
+        "name": "Volume"
       },
       "phase_voltage": {
         "name": "Voltage {phase}"
@@ -139,7 +147,7 @@
         "name": "Export power {phase}"
       },
       "water": {
-        "name": "Water"
+        "name": "Volume"
       },
       "breaker": {
         "name": "Breaker",
@@ -150,7 +158,7 @@
         }
       },
       "gas_valve": {
-        "name": "Gas valve",
+        "name": "Valve",
         "state": {
           "closed": "Closed",
           "open": "Open",
@@ -158,7 +166,7 @@
         }
       },
       "water_valve": {
-        "name": "Water valve",
+        "name": "Valve",
         "state": {
           "closed": "Closed",
           "open": "Open",

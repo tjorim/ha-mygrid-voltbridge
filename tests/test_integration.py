@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 from datetime import timedelta
 
 import pytest
@@ -236,6 +237,125 @@ async def test_device_registry_and_disabled_defaults(
             "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
         )
         assert (registry.async_get(entity_id).disabled_by is not None) is disabled, key
+
+
+def mbus_device(hass: HomeAssistant, vb_entry: MockConfigEntry, identifier: str):  # type: ignore[no-untyped-def]
+    return dr.async_get(hass).async_get_device_by_identifier(
+        ("mygrid_voltbridge", identifier), vb_entry.entry_id
+    )
+
+
+def entity_device_id(hass: HomeAssistant, key: str) -> str | None:
+    registry = er.async_get(hass)
+    entity_id = registry.async_get_entity_id(
+        "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+    )
+    return registry.async_get(entity_id).device_id
+
+
+async def test_mbus_meters_get_their_own_devices(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    telegram = vb_entry.runtime_data.telegram
+    adapter = mbus_device(hass, vb_entry, SERIAL)
+    gas = mbus_device(hass, vb_entry, telegram.gas.equipment_id)
+    water = mbus_device(hass, vb_entry, telegram.water.equipment_id)
+    assert gas.id != water.id != adapter.id
+    assert gas.via_device_id == water.via_device_id == adapter.id
+    assert (gas.name, water.name) == ("Gas meter", "Water meter")
+    assert gas.model == "M-Bus gas meter"
+    assert gas.serial_number == telegram.gas.equipment_id
+    for key, device in (
+        ("gas", gas),
+        ("gas_valve", gas),
+        ("water", water),
+        ("net_power", adapter),
+        ("breaker", adapter),
+    ):
+        assert entity_device_id(hass, key) == device.id, key
+
+
+async def test_existing_gas_entity_moves_without_being_recreated(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    vb_entry.add_to_hass(hass)
+    adapter = dr.async_get(hass).async_get_or_create(
+        config_entry_id=vb_entry.entry_id,
+        identifiers={("mygrid_voltbridge", SERIAL)},
+    )
+    old = er.async_get(hass).async_get_or_create(
+        "sensor",
+        "mygrid_voltbridge",
+        f"{SERIAL}_gas",
+        config_entry=vb_entry,
+        device_id=adapter.id,
+        suggested_object_id="mygrid_voltbridge_gas",
+    )
+    await setup(hass, vb_entry)
+    moved = er.async_get(hass).async_get(old.entity_id)
+    assert moved.id == old.id
+    assert moved.device_id != adapter.id
+    assert state(hass, "gas") == "440.448"
+
+
+async def test_mbus_meter_without_equipment_id_uses_its_channel(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    telegram = make_telegram()
+    channels = {
+        number: dataclasses.replace(channel, equipment_id=None)
+        for number, channel in telegram.channels.items()
+    }
+    vb_client.async_get_telegram.return_value = dataclasses.replace(
+        telegram, channels=channels
+    )
+    await setup(hass, vb_entry)
+    assert (
+        entity_device_id(hass, "gas")
+        == mbus_device(hass, vb_entry, f"{SERIAL}_mbus_1").id
+    )
+    assert (
+        entity_device_id(hass, "water")
+        == mbus_device(hass, vb_entry, f"{SERIAL}_mbus_2").id
+    )
+
+
+async def test_mbus_entities_stay_on_the_adapter_without_a_telegram(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    vb_client.async_get_telegram.side_effect = VoltBridgeUnsupportedError("404")
+    await setup(hass, vb_entry)
+    assert entity_device_id(hass, "gas") == mbus_device(hass, vb_entry, SERIAL).id
+
+
+async def test_replaced_mbus_meter_reloads_the_entry(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    old = mbus_device(hass, vb_entry, vb_entry.runtime_data.telegram.gas.equipment_id)
+    assert entity_device_id(hass, "gas") == old.id
+    telegram = make_telegram()
+    channels = dict(telegram.channels)
+    channels[1] = dataclasses.replace(channels[1], equipment_id="NEWGAS0001")
+    vb_client.async_get_telegram.return_value = dataclasses.replace(
+        telegram, channels=channels
+    )
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    await hass.async_block_till_done()
+    new = mbus_device(hass, vb_entry, "NEWGAS0001")
+    assert new is not None
+    assert entity_device_id(hass, "gas") == new.id
+
+
+async def test_unchanged_mbus_meters_do_not_reload(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    coordinator = vb_entry.runtime_data
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    await hass.async_block_till_done()
+    assert vb_entry.runtime_data is coordinator
 
 
 async def test_device_carries_adapter_identity(

@@ -9,7 +9,7 @@ from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -19,6 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from mygrid_voltbridge import (
     DeviceInfo,
     LiveUpdate,
+    MBusChannel,
     P1Data,
     P1Status,
     PhaseData,
@@ -30,7 +31,12 @@ from mygrid_voltbridge import (
     async_stream,
 )
 
-from .const import CONF_POLL_INTERVAL, DOMAIN, VOLTBRIDGE_DEFAULT_POLL_INTERVAL
+from .const import (
+    CONF_POLL_INTERVAL,
+    DOMAIN,
+    MBUS_KINDS,
+    VOLTBRIDGE_DEFAULT_POLL_INTERVAL,
+)
 
 LOGGER = logging.getLogger(__name__)
 # The status page is larger than the JSON replies and changes only with a firmware update.
@@ -40,6 +46,14 @@ OFFLINE_AFTER = 30
 # Pause before following the device again after it went offline.
 RESTART_DELAY = 5
 type VoltBridgeConfigEntry = ConfigEntry[VoltBridgeCoordinator]
+
+
+def mbus_identifier(serial: object, channel: MBusChannel) -> str:
+    """Identify an M-Bus meter by its equipment ID, which follows it when it is re-wired.
+
+    A meter that reports no equipment ID is identified by its channel instead.
+    """
+    return channel.equipment_id or f"{serial}_mbus_{channel.channel}"
 
 
 class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
@@ -68,6 +82,9 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         self.telegram: Telegram | None = None
         self.status: P1Status | None = None
         self.device_info: DeviceInfo | None = None
+        # Set once the adapter's device exists, so the M-Bus meters can point at it.
+        self.adapter_device_id: str | None = None
+        self._mbus_identifiers: dict[str, str] = {}
 
     @property
     def phases(self) -> Mapping[int, PhaseData]:
@@ -80,6 +97,25 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         phases = dict(self.telegram.phases) if self.telegram is not None else {}
         phases.update(self.data.phases)
         return phases
+
+    def mbus_identifiers(self) -> dict[str, str]:
+        """Return the device identifier of each gas and water meter in the last telegram."""
+        if self.telegram is None:
+            return {}
+        return {
+            kind: mbus_identifier(self.data.meter_serial, channel)
+            for kind in MBUS_KINDS
+            if (channel := self.telegram.channel_of(kind)) is not None
+        }
+
+    @callback
+    def _reload_if_mbus_changed(self) -> None:
+        """Reload when a meter was replaced or appeared: its device is fixed at setup."""
+        current = self.mbus_identifiers()
+        if all(self._mbus_identifiers.get(k) == v for k, v in current.items()):
+            return
+        LOGGER.debug("M-Bus meters changed, reloading: %s", current)
+        self.hass.config_entries.async_schedule_reload(self.config_entry.entry_id)
 
     async def _async_update_data(self) -> P1Data:
         """Read the first snapshot; the stream takes over from there."""
@@ -178,6 +214,7 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         """Take the first snapshot, then follow the meter and poll the details."""
         await self.async_config_entry_first_refresh()
         await self._async_read_device_info()
+        self._mbus_identifiers = self.mbus_identifiers()
         self.config_entry.async_on_unload(
             async_track_time_interval(
                 self.hass, self._async_poll_details, self._poll_interval
@@ -196,6 +233,7 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         """Refresh what the stream does not carry: telegram and status."""
         await self._async_update_telegram()
         await self._async_update_status()
+        self._reload_if_mbus_changed()
         self.async_update_listeners()
 
     async def _async_follow_stream(self) -> None:
