@@ -3,6 +3,7 @@
 import asyncio
 import dataclasses
 import logging
+from collections.abc import Mapping
 from contextlib import aclosing
 from datetime import timedelta
 
@@ -20,6 +21,7 @@ from mygrid_voltbridge import (
     LiveUpdate,
     P1Data,
     P1Status,
+    PhaseData,
     Telegram,
     VoltBridgeClient,
     VoltBridgeError,
@@ -66,6 +68,18 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         self.telegram: Telegram | None = None
         self.status: P1Status | None = None
         self.device_info: DeviceInfo | None = None
+
+    @property
+    def phases(self) -> Mapping[int, PhaseData]:
+        """Return the per-phase values: the live snapshot, else the last telegram.
+
+        The snapshot keys for L2 and L3 are a guess at the firmware's naming, so
+        a phase the snapshot lacks is read from the telegram's standard DSMR
+        codes instead. Those values are as old as the last poll.
+        """
+        phases = dict(self.telegram.phases) if self.telegram is not None else {}
+        phases.update(self.data.phases)
+        return phases
 
     async def _async_update_data(self) -> P1Data:
         """Read the first snapshot; the stream takes over from there."""

@@ -57,7 +57,7 @@ The only thing the integration ever sends to the device is the opt-in **Reboot**
 ## Known limitations
 
 - The API is reverse-engineered and unofficial; firmware changes can break it.
-- Export power/energy and phases L2/L3 are decoded by pattern, not verified against hardware (the test meter is single-phase with no export).
+- Export power/energy and phases L2/L3 are decoded by pattern, not verified against hardware (the test meter is single-phase with no export). A phase missing from the live snapshot is read from the raw telegram, so its values update at the polling interval instead of about once a second.
 - Gas and water meters report every few minutes to an hour, so those sensors change at that pace.
 - Entities appear only for what the meter reports when the entry is set up. Reload the entry after connecting a gas or water meter or adding a phase.
 - One meter per config entry; add the integration again for a second VoltBridge.

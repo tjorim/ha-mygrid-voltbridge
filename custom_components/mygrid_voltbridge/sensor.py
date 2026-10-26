@@ -348,7 +348,7 @@ async def async_setup_entry(
             for description in TELEGRAM_SENSORS
             if description.value_fn(telegram) is not None
         )
-    for phase in sorted(data.phases):
+    for phase in sorted(coordinator.phases):
         entities.extend(
             VoltBridgePhaseSensor(coordinator, description)
             for description in _phase_descriptions(phase)
@@ -453,5 +453,5 @@ class VoltBridgePhaseSensor(VoltBridgeEntity, SensorEntity):
     @property
     def native_value(self) -> int | float | None:
         """Return the value of this phase, unknown if the meter dropped it."""
-        phase = self.coordinator.data.phases.get(self.entity_description.phase)
+        phase = self.coordinator.phases.get(self.entity_description.phase)
         return None if phase is None else self.entity_description.value_fn(phase)

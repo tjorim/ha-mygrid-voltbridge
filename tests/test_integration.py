@@ -384,6 +384,24 @@ async def test_tariff_options_follow_the_library(
     )
 
 
+async def test_phases_missing_from_the_snapshot_come_from_the_telegram(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    telegram = make_telegram()
+    object.__setattr__(
+        telegram,
+        "phases",
+        {1: PhaseData(1, 0, 1.0, 1.0), 2: PhaseData(2, 0, 231.0, 2.5)},
+    )
+    vb_client.async_get_telegram.return_value = telegram
+    await setup(hass, vb_entry)
+    assert state(hass, "voltage_l2") == "231.0"
+    assert state(hass, "current_l2") == "2.5"
+    assert (
+        state(hass, "voltage_l1") == "237.3"
+    )  # the snapshot wins where it has a phase
+
+
 async def test_real_limits_create_disabled_diagnostics(
     hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
