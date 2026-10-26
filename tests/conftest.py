@@ -1,10 +1,12 @@
 """VoltBridge fixtures mock the independent client library, not HTTP or UDP."""
 
-from collections.abc import Callable, Generator
-from unittest.mock import AsyncMock, MagicMock, patch
+import asyncio
+from collections.abc import AsyncGenerator, Generator
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from mygrid_voltbridge import P1Broadcast
+from mygrid_voltbridge import LiveUpdate, P1Data, UpdateSource
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.mygrid_voltbridge.const import DOMAIN
@@ -32,17 +34,50 @@ def vb_client() -> Generator[AsyncMock]:
         yield instance
 
 
+class FakeStream:
+    """Stand-in for ``async_stream``: yields what a test pushes, or raises what it fails with."""
+
+    def __init__(self) -> None:
+        self.queue: asyncio.Queue[LiveUpdate | Exception] = asyncio.Queue()
+        self.calls: list[dict[str, object]] = []
+        self.closed = 0
+
+    def __call__(self, client: object, **kwargs: object) -> AsyncGenerator[LiveUpdate]:
+        self.calls.append(kwargs)
+        return self._run()
+
+    async def _run(self) -> AsyncGenerator[LiveUpdate]:
+        try:
+            while True:
+                item = await self.queue.get()
+                if isinstance(item, Exception):
+                    raise item
+                yield item
+        finally:
+            self.closed += 1
+
+    def push(
+        self,
+        data: P1Data,
+        source: UpdateSource = UpdateSource.UDP,
+        rssi: int | None = None,
+    ) -> None:
+        now = datetime.now(UTC)
+        self.queue.put_nowait(LiveUpdate(data, source, now, now, rssi))
+
+    def fail(self, error: Exception) -> None:
+        self.queue.put_nowait(error)
+
+
 @pytest.fixture
-def vb_listener() -> Generator[Callable[[], Callable[[P1Broadcast], None]]]:
-    """Patch ``async_listen``; the returned getter yields the registered callback."""
-    transport = MagicMock()
-    with patch(
-        "custom_components.mygrid_voltbridge.coordinator.async_listen",
-        new_callable=AsyncMock,
-        return_value=transport,
-    ) as listen:
-        listen.transport = transport
-        yield lambda: listen.call_args.args[0]
+def vb_stream() -> Generator[FakeStream]:
+    """Patch ``async_stream``; the restart pause is skipped."""
+    stream = FakeStream()
+    with (
+        patch("custom_components.mygrid_voltbridge.coordinator.async_stream", stream),
+        patch("custom_components.mygrid_voltbridge.coordinator.RESTART_DELAY", 0),
+    ):
+        yield stream
 
 
 @pytest.fixture

@@ -19,7 +19,7 @@ def main() -> None:
     ]
     assert manifest["domain"] == "mygrid_voltbridge"
     assert manifest["version"] == project["project"]["version"] == "0.1.0"
-    assert manifest["requirements"] == ["mygrid-voltbridge==0.5.0"]
+    assert manifest["requirements"] == ["mygrid-voltbridge==0.6.0"]
     assert manifest["requirements"][0] in project["dependency-groups"]["dev"]
     assert "dependencies" not in manifest
     assert manifest["dhcp"] == [{"registered_devices": True}]

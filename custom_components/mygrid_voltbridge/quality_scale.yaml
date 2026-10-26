@@ -6,7 +6,7 @@ rules:
     comment: Uses a standard button entity for reboot; registers no custom services.
   appropriate-polling:
     status: done
-    comment: Live values arrive by UDP push; the HTTP snapshot and telegram are polled every 30 s (5–600 s configurable) because the device is a small microcontroller. tests/test_integration.py.
+    comment: Live values arrive by UDP push, with a once-a-second /api/power fallback while it is silent; the HTTP snapshot and telegram are polled every 30 s (5–600 s configurable) because the device is a small microcontroller. tests/test_integration.py.
   brands:
     status: todo
     comment: Add approved manufacturer artwork and submit to HA brands when publishing; no artwork rights were supplied.

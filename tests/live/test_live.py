@@ -1,7 +1,7 @@
 """Run the real integration inside the Home Assistant test runtime against a real device.
 
-Nothing is mocked: the config flow reads the meter, the entry sets up, UDP push
-and HTTP polling are real. The assertions only check structure and liveness.
+Nothing is mocked: the config flow reads the meter, the entry sets up, UDP push,
+the power fallback and HTTP polling are real. The assertions only check structure and liveness.
 """
 
 import asyncio
