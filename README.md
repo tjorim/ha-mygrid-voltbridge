@@ -32,6 +32,7 @@ Connect the P1 cable before adding the device: entities are created from the fir
 | Net / import / export power | W; positive net power is import |
 | Import / export power (1 min average) | W; a rolling one-minute mean, steadier than the live value for automations |
 | Energy imported / exported (day, night) | `total_increasing`, suitable for the Energy dashboard |
+| Energy imported / exported (total) | Day plus night in one sensor each, for the Energy dashboard |
 | Voltage and current per phase | One set per phase the meter reports (L1 verified) |
 | Import / export power per phase | Disabled by default |
 | Current average demand, peak demand, peak demand time | Quarter-hour average and the month's peak (capacity tariff). The peak sensor carries the monthly peak history as the `history` attribute |
@@ -42,6 +43,7 @@ Connect the P1 cable before adding the device: entities are created from the fir
 | Breaker | Diagnostic: open / closed / ready to reconnect |
 | Wi-Fi signal | Diagnostic, dBm. Kept fresh by the UDP stream (a poor signal explains missed updates) |
 | P1 packet error rate | Diagnostic, %: the share of P1 telegrams that failed their checksum. A rising value points at the P1 cable |
+| Free heap, minimum free heap | Diagnostic, bytes, disabled by default. Scraped from the status page and refreshed hourly. A minimum that stays near zero over days is worth reporting |
 | Reboot | Button, disabled by default. Restarts the VoltBridge; the entities are unavailable until it answers again |
 | Limiter and fuse threshold | Diagnostic, disabled by default; created only when the meter has real limits (999.9 kW / 999 A mean none) |
 
@@ -51,7 +53,7 @@ The only thing the integration ever sends to the device is the opt-in **Reboot**
 
 ## Examples
 
-- **Energy dashboard:** add *Energy imported (day/night)* as grid consumption, *Energy exported (day/night)* as return to grid, and *Gas* or *Water* as sources.
+- **Energy dashboard:** add *Energy imported* as grid consumption, *Energy exported* as return to grid, and *Gas* or *Water* as sources. The day and night sensors are there if you want the two tariffs as separate sources.
 - **Solar-surplus automation:** trigger when *Net power* stays below `-500` W for five minutes, then start the washing machine. Net power is negative while exporting.
 - **Capacity tariff (Belgium):** alert when *Current average demand* (the running quarter-hour average, DSMR `1-0:1.4.0`) climbs towards the month's *Peak demand*.
 
@@ -61,6 +63,8 @@ The only thing the integration ever sends to the device is the opt-in **Reboot**
 - Export power/energy and phases L2/L3 are decoded by pattern, not verified against hardware (the test meter is single-phase with no export). A phase missing from the live snapshot is read from the raw telegram, so its values update at the polling interval instead of about once a second.
 - Gas and water meters report every few minutes to an hour, so those sensors change at that pace.
 - Entities appear only for what the meter reports when the entry is set up. Reload the entry after connecting a gas or water meter or adding a phase.
+- A weak Wi-Fi signal (below about -75 dBm) loses UDP datagrams; check *Wi-Fi signal* first when updates are missed.
+- Do not run this integration and the MyGrid MQTT device for the same meter: the meter appears twice (`sensor.voltbridge_*` and `sensor.mygrid_voltbridge_*`). Pick one source, and use only its entities in the Energy dashboard.
 - One meter per config entry; add the integration again for a second VoltBridge.
 
 ## Troubleshooting

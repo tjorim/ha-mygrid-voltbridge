@@ -158,8 +158,9 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         self.device_info = info
 
     async def _async_refresh_device_info(self, _now: object) -> None:
-        """Pick up a new firmware build without a reload."""
+        """Pick up a new firmware build without a reload, and the heap readings."""
         await self._async_read_device_info()
+        self.async_update_listeners()
         registry = dr.async_get(self.hass)
         device = registry.async_get_device_by_identifier(
             (DOMAIN, str(self.data.meter_serial)), self.config_entry.entry_id

@@ -95,6 +95,12 @@
       "energy_export_t2": {
         "name": "Energy exported (night)"
       },
+      "energy_import": {
+        "name": "Energy imported"
+      },
+      "energy_export": {
+        "name": "Energy exported"
+      },
       "avg_import_1min": {
         "name": "Import power (1 min average)"
       },
@@ -176,6 +182,12 @@
       },
       "p1_error_rate": {
         "name": "P1 packet error rate"
+      },
+      "free_heap": {
+        "name": "Free heap"
+      },
+      "min_free_heap": {
+        "name": "Minimum free heap"
       }
     },
     "button": {
