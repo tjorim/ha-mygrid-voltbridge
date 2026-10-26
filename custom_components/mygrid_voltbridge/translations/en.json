@@ -137,6 +137,22 @@
           "ready_to_reconnect": "Ready to reconnect"
         }
       },
+      "gas_valve": {
+        "name": "Gas valve",
+        "state": {
+          "closed": "Closed",
+          "open": "Open",
+          "ready_to_reconnect": "Ready to reconnect"
+        }
+      },
+      "water_valve": {
+        "name": "Water valve",
+        "state": {
+          "closed": "Closed",
+          "open": "Open",
+          "ready_to_reconnect": "Ready to reconnect"
+        }
+      },
       "meter_model": {
         "name": "Meter model"
       },

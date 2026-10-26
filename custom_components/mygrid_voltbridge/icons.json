@@ -15,6 +15,22 @@
           "closed": "mdi:electric-switch-closed",
           "ready_to_reconnect": "mdi:electric-switch"
         }
+      },
+      "gas_valve": {
+        "default": "mdi:valve",
+        "state": {
+          "closed": "mdi:valve-closed",
+          "open": "mdi:valve-open",
+          "ready_to_reconnect": "mdi:valve-closed"
+        }
+      },
+      "water_valve": {
+        "default": "mdi:valve",
+        "state": {
+          "closed": "mdi:valve-closed",
+          "open": "mdi:valve-open",
+          "ready_to_reconnect": "mdi:valve-closed"
+        }
       }
     }
   }

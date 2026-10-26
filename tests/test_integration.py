@@ -11,6 +11,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import dt as dt_util
 from mygrid_voltbridge import (
+    TARIFF_NAMES,
     PhaseData,
     UpdateSource,
     VoltBridgeConnectionError,
@@ -337,7 +338,22 @@ async def test_telegram_sensors(hass, vb_client, vb_entry, vb_stream) -> None:  
     await setup(hass, vb_entry)
     assert state(hass, "water") == "33.692"
     assert state(hass, "breaker") == "closed"
+    assert state(hass, "gas_valve") == "open"
     registry = er.async_get(hass)
+    assert (  # the fixture's water meter reports no valve
+        registry.async_get_entity_id(
+            "sensor", "mygrid_voltbridge", f"{SERIAL}_water_valve"
+        )
+        is None
+    )
+    for key, last_reading in (
+        ("water", "2026-10-23T19:15:30+00:00"),
+        ("gas", "2026-10-23T19:14:09+00:00"),
+    ):
+        entity_id = registry.async_get_entity_id(
+            "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+        )
+        assert hass.states.get(entity_id).attributes["last_reading"] == last_reading
     for key in (
         "limiter_threshold",
         "fuse_threshold",
@@ -354,6 +370,18 @@ async def test_telegram_sensors(hass, vb_client, vb_entry, vb_stream) -> None:  
     history = hass.states.get(entity_id).attributes["history"]
     assert [item["power"] for item in history] == [2780, 3576, 2811]
     assert history[0]["peak_at"] == "2026-07-19T14:15:00+00:00"
+
+
+async def test_tariff_options_follow_the_library(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "sensor", "mygrid_voltbridge", f"{SERIAL}_tariff"
+    )
+    assert hass.states.get(entity_id).attributes["options"] == list(
+        TARIFF_NAMES.values()
+    )
 
 
 async def test_real_limits_create_disabled_diagnostics(
