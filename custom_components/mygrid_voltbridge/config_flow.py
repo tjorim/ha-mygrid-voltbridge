@@ -20,6 +20,7 @@ from mygrid_voltbridge import (
 
 from .const import (
     CONF_DEVICE,
+    CONF_HARDWARE_VERSION,
     CONF_MAC,
     CONF_POLL_INTERVAL,
     DEVICE_VOLTBRIDGE,
@@ -40,6 +41,7 @@ class VoltBridgeFlow(ConfigFlow):
 
     _host: str | None = None
     _mac: str | None = None
+    _hardware_version: str | None = None
 
     async def _voltbridge_serial(self, host: str) -> tuple[str | None, str | None]:
         """Return ``(serial, error)`` after one real read."""
@@ -108,7 +110,7 @@ class VoltBridgeFlow(ConfigFlow):
             "name": discovery_info.hostname.removesuffix(".local.")
         }
         return await self._async_voltbridge_discovered(
-            str(discovery_info.ip_address), info.mac_address
+            str(discovery_info.ip_address), info.mac_address, info.hardware_version
         )
 
     async def async_step_dhcp(
@@ -121,14 +123,17 @@ class VoltBridgeFlow(ConfigFlow):
         return await self._async_voltbridge_discovered(discovery_info.ip, mac)
 
     async def _async_voltbridge_discovered(
-        self, host: str, mac: str
+        self, host: str, mac: str, hardware_version: str | None = None
     ) -> ConfigFlowResult:
         serial, error = await self._voltbridge_serial(host)
         if serial is None:
             return self.async_abort(reason=error or "voltbridge_cannot_connect")
         await self.async_set_unique_id(serial)
-        self._abort_if_unique_id_configured(updates={CONF_HOST: host, CONF_MAC: mac})
-        self._host, self._mac = host, mac
+        updates = {CONF_HOST: host, CONF_MAC: mac}
+        if hardware_version:
+            updates[CONF_HARDWARE_VERSION] = hardware_version
+        self._abort_if_unique_id_configured(updates=updates)
+        self._host, self._mac, self._hardware_version = host, mac, hardware_version
         return await self.async_step_discovery_confirm()
 
     async def async_step_discovery_confirm(
@@ -140,6 +145,8 @@ class VoltBridgeFlow(ConfigFlow):
             data = {CONF_DEVICE: DEVICE_VOLTBRIDGE, CONF_HOST: self._host}
             if self._mac:
                 data[CONF_MAC] = self._mac
+            if self._hardware_version:
+                data[CONF_HARDWARE_VERSION] = self._hardware_version
             return self.async_create_entry(title="MyGrid VoltBridge", data=data)
         self._set_confirm_only()
         return self.async_show_form(

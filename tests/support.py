@@ -5,6 +5,7 @@ from pathlib import Path
 
 from mygrid_voltbridge import (
     BroadcastStream,
+    DeviceInfo,
     P1Broadcast,
     P1Data,
     P1Status,
@@ -35,6 +36,26 @@ def make_status(**overrides: object) -> P1Status:
     }
     values.update(overrides)
     return P1Status(**values)  # type: ignore[arg-type]
+
+
+def make_device_info(**overrides: object) -> DeviceInfo:
+    values: dict[str, object] = {
+        "mac_address": "90:70:69:d0:2d:80",
+        "hostname": "voltbridge-d02d80",
+        "firmware_type": "app",
+        "firmware_version": 1,
+        "firmware_variant": 0,
+        "build_info": "app:build-15.6, idf:v6.0.1, date:202609272035",
+        "uptime": None,
+        "boot_reason": None,
+        "last_reboot_reason": None,
+        "free_heap": None,
+        "min_free_heap": None,
+        "usb_power_connected": None,
+        "p1_out_connected": None,
+    }
+    values.update(overrides)
+    return DeviceInfo(**values)  # type: ignore[arg-type]
 
 
 def make_data(**overrides: object) -> P1Data:

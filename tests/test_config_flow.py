@@ -23,6 +23,7 @@ PROPERTIES = {
     "model": "Voltbridge P1 Meter",
     "manufacturer": "MyGrid",
     "device_id": "907069D02D80",
+    "hardware_version": "P1Wifi-rev1",
     "api_path": "/api/p1data",
 }
 
@@ -146,6 +147,7 @@ async def test_zeroconf_flow(
         "device": "voltbridge",
         "host": "192.168.0.45",
         "mac": "90:70:69:d0:2d:80",
+        "hardware_version": "P1Wifi-rev1",
     }
     assert result["result"].unique_id == SERIAL
 
@@ -188,6 +190,7 @@ async def test_zeroconf_known_device_updates_host(
     )
     assert result["reason"] == "already_configured"
     assert vb_entry.data["host"] == "192.168.0.45"
+    assert vb_entry.data["hardware_version"] == "P1Wifi-rev1"
 
 
 async def test_reconfigure(
@@ -250,6 +253,7 @@ async def test_dhcp_updates_known_device(
     assert result["reason"] == "already_configured"
     assert vb_entry.data["host"] == "192.168.0.99"
     assert vb_entry.data["mac"] == "90:70:69:d0:2d:80"
+    assert "hardware_version" not in vb_entry.data
 
 
 async def test_dhcp_unreachable(hass: HomeAssistant, vb_client: AsyncMock) -> None:

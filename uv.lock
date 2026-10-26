@@ -1210,7 +1210,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "mygrid-voltbridge", specifier = "==0.4.0" },
+    { name = "mygrid-voltbridge", specifier = "==0.5.0" },
     { name = "mypy", specifier = "==2.4.0" },
     { name = "pytest-homeassistant-custom-component", specifier = "==0.13.373" },
     { name = "ruff", specifier = "==0.17.2" },
@@ -1800,14 +1800,14 @@ wheels = [
 
 [[package]]
 name = "mygrid-voltbridge"
-version = "0.4.0"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/30/4b/5408e41ca46ff0c781b199fbdc1389b1f6d1a3e8bccb20e3c4017c0023bf/mygrid_voltbridge-0.4.0.tar.gz", hash = "sha256:6d886ede092e8e77bbff328b6b436dc6e977285e8c8ddec6e3a96d9a9c974ba8", size = 17908, upload-time = "2026-10-24T00:26:30.553Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b2/f2/c886d31aae4dabea4179c38868d596963be177bcb7f4c5729f39aa630811/mygrid_voltbridge-0.5.0.tar.gz", hash = "sha256:c03a87fc0ef1f2f9a176d03f76dc20d1e9658b65e381ba44c1d023b3833419d2", size = 24671, upload-time = "2026-10-25T22:35:11.757Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/30/36/28e71975310593f28e986c2d01ced98e4c22acea5d1646d65aefc0601178/mygrid_voltbridge-0.4.0-py3-none-any.whl", hash = "sha256:c78cbc0dfeb1314f700dc4c19fa80c94f80803b211542ba58b3c112106b0f050", size = 21675, upload-time = "2026-10-24T00:26:29.173Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/f2/771284a4070564a80770ee624d2410829ea1fa6abf18d7894b3127592e23/mygrid_voltbridge-0.5.0-py3-none-any.whl", hash = "sha256:eebb85c07d754e81c0dcdb2c9b5dec556aae84ab49be7a57820f443447fc6bf8", size = 30070, upload-time = "2026-10-25T22:35:10.42Z" },
 ]
 
 [[package]]

@@ -7,6 +7,7 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.event import async_track_time_interval
@@ -14,6 +15,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 
 from mygrid_voltbridge import (
     BroadcastStream,
+    DeviceInfo,
     P1Broadcast,
     P1Data,
     P1Status,
@@ -28,6 +30,8 @@ from mygrid_voltbridge import (
 from .const import CONF_POLL_INTERVAL, DOMAIN, VOLTBRIDGE_DEFAULT_POLL_INTERVAL
 
 LOGGER = logging.getLogger(__name__)
+# The status page is larger than the JSON replies and changes only with a firmware update.
+DEVICE_INFO_INTERVAL = timedelta(hours=1)
 type VoltBridgeConfigEntry = ConfigEntry[VoltBridgeCoordinator]
 
 
@@ -54,6 +58,7 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         self._cancel_poll: CALLBACK_TYPE | None = None
         self.telegram: Telegram | None = None
         self.status: P1Status | None = None
+        self.device_info: DeviceInfo | None = None
 
     async def _async_update_data(self) -> P1Data:
         issue_id = f"no_p1_data_{self.config_entry.entry_id}"
@@ -107,13 +112,48 @@ class VoltBridgeCoordinator(DataUpdateCoordinator[P1Data]):
         except VoltBridgeError as err:
             LOGGER.debug("Status unavailable, keeping the previous one: %s", err)
 
+    async def _async_read_device_info(self) -> None:
+        """Read the adapter's firmware and MAC from its status page.
+
+        Optional: without them the device is still identified by the meter
+        serial, and a failed read keeps the previous values.
+        """
+        try:
+            info = await self.client.async_get_device_info()
+        except VoltBridgeError as err:
+            LOGGER.debug("Device info unavailable, keeping the previous one: %s", err)
+            return
+        self.device_info = info
+
+    async def _async_refresh_device_info(self, _now: object) -> None:
+        """Pick up a new firmware build without a reload."""
+        await self._async_read_device_info()
+        registry = dr.async_get(self.hass)
+        device = registry.async_get_device_by_identifier(
+            (DOMAIN, str(self.data.meter_serial)), self.config_entry.entry_id
+        )
+        if (
+            device is not None
+            and self.device_info is not None
+            and device.sw_version != self.device_info.build_info
+        ):
+            registry.async_update_device(
+                device.id, sw_version=self.device_info.build_info
+            )
+
     async def async_start(self) -> None:
         """Take the first snapshot, then start push and poll."""
         await self.async_config_entry_first_refresh()
+        await self._async_read_device_info()
         self._cancel_poll = async_track_time_interval(
             self.hass, self._async_poll, self._poll_interval
         )
         self.config_entry.async_on_unload(self._stop)
+        self.config_entry.async_on_unload(
+            async_track_time_interval(
+                self.hass, self._async_refresh_device_info, DEVICE_INFO_INTERVAL
+            )
+        )
         try:
             transport = await async_listen(self._handle_broadcast)
         except OSError as err:
