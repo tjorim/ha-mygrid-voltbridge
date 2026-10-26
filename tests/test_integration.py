@@ -11,6 +11,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import dt as dt_util
 from mygrid_voltbridge import (
+    TARIFF_NAMES,
     PhaseData,
     UpdateSource,
     VoltBridgeConnectionError,
@@ -58,6 +59,8 @@ async def test_entities_from_first_snapshot(
     assert state(hass, "export_power") == "0"
     assert state(hass, "energy_import_t1") == "3673.536"
     assert state(hass, "energy_export_t2") == "0.0"
+    assert state(hass, "avg_import_1min") == "261"
+    assert state(hass, "avg_export_1min") == "0"
     assert state(hass, "gas") == "440.448"
     assert state(hass, "tariff") == "day"
     assert state(hass, "peak_demand") == "2348"
@@ -337,7 +340,22 @@ async def test_telegram_sensors(hass, vb_client, vb_entry, vb_stream) -> None:  
     await setup(hass, vb_entry)
     assert state(hass, "water") == "33.692"
     assert state(hass, "breaker") == "closed"
+    assert state(hass, "gas_valve") == "open"
     registry = er.async_get(hass)
+    assert (  # the fixture's water meter reports no valve
+        registry.async_get_entity_id(
+            "sensor", "mygrid_voltbridge", f"{SERIAL}_water_valve"
+        )
+        is None
+    )
+    for key, last_reading in (
+        ("water", "2026-10-23T19:15:30+00:00"),
+        ("gas", "2026-10-23T19:14:09+00:00"),
+    ):
+        entity_id = registry.async_get_entity_id(
+            "sensor", "mygrid_voltbridge", f"{SERIAL}_{key}"
+        )
+        assert hass.states.get(entity_id).attributes["last_reading"] == last_reading
     for key in (
         "limiter_threshold",
         "fuse_threshold",
@@ -354,6 +372,36 @@ async def test_telegram_sensors(hass, vb_client, vb_entry, vb_stream) -> None:  
     history = hass.states.get(entity_id).attributes["history"]
     assert [item["power"] for item in history] == [2780, 3576, 2811]
     assert history[0]["peak_at"] == "2026-07-19T14:15:00+00:00"
+
+
+async def test_tariff_options_follow_the_library(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    await setup(hass, vb_entry)
+    entity_id = er.async_get(hass).async_get_entity_id(
+        "sensor", "mygrid_voltbridge", f"{SERIAL}_tariff"
+    )
+    assert hass.states.get(entity_id).attributes["options"] == list(
+        TARIFF_NAMES.values()
+    )
+
+
+async def test_phases_missing_from_the_snapshot_come_from_the_telegram(
+    hass, vb_client, vb_entry, vb_stream
+) -> None:  # type: ignore[no-untyped-def]
+    telegram = make_telegram()
+    object.__setattr__(
+        telegram,
+        "phases",
+        {1: PhaseData(1, 0, 1.0, 1.0), 2: PhaseData(2, 0, 231.0, 2.5)},
+    )
+    vb_client.async_get_telegram.return_value = telegram
+    await setup(hass, vb_entry)
+    assert state(hass, "voltage_l2") == "231.0"
+    assert state(hass, "current_l2") == "2.5"
+    assert (
+        state(hass, "voltage_l1") == "237.3"
+    )  # the snapshot wins where it has a phase
 
 
 async def test_real_limits_create_disabled_diagnostics(

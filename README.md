@@ -30,12 +30,14 @@ Connect the P1 cable before adding the device: entities are created from the fir
 | Entity | Notes |
 | --- | --- |
 | Net / import / export power | W; positive net power is import |
+| Import / export power (1 min average) | W; a rolling one-minute mean, steadier than the live value for automations |
 | Energy imported / exported (day, night) | `total_increasing`, suitable for the Energy dashboard |
 | Voltage and current per phase | One set per phase the meter reports (L1 verified) |
 | Import / export power per phase | Disabled by default |
 | Current average demand, peak demand, peak demand time | Quarter-hour average and the month's peak (capacity tariff). The peak sensor carries the monthly peak history as the `history` attribute |
 | Tariff | `day` / `night` |
-| Gas, water | m³; only if those meters are connected to the meter's M-Bus. Read by polling; not part of the UDP broadcast |
+| Gas, water | m³; only if those meters are connected to the meter's M-Bus. Read by polling; not part of the UDP broadcast. The `last_reading` attribute holds the time of the meter's own reading |
+| Gas and water valve | Diagnostic; open, closed or ready to reconnect, if the M-Bus meter reports a valve |
 | Meter model, DSMR version | Diagnostic: what the meter reports in its telegram header |
 | Breaker | Diagnostic: open / closed / ready to reconnect |
 | Wi-Fi signal | Diagnostic, dBm. Kept fresh by the UDP stream (a poor signal explains missed updates) |
@@ -56,7 +58,7 @@ The only thing the integration ever sends to the device is the opt-in **Reboot**
 ## Known limitations
 
 - The API is reverse-engineered and unofficial; firmware changes can break it.
-- Export power/energy and phases L2/L3 are decoded by pattern, not verified against hardware (the test meter is single-phase with no export).
+- Export power/energy and phases L2/L3 are decoded by pattern, not verified against hardware (the test meter is single-phase with no export). A phase missing from the live snapshot is read from the raw telegram, so its values update at the polling interval instead of about once a second.
 - Gas and water meters report every few minutes to an hour, so those sensors change at that pace.
 - Entities appear only for what the meter reports when the entry is set up. Reload the entry after connecting a gas or water meter or adding a phase.
 - One meter per config entry; add the integration again for a second VoltBridge.

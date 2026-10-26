@@ -95,6 +95,12 @@
       "energy_export_t2": {
         "name": "Energy exported (night)"
       },
+      "avg_import_1min": {
+        "name": "Import power (1 min average)"
+      },
+      "avg_export_1min": {
+        "name": "Export power (1 min average)"
+      },
       "avg_demand": {
         "name": "Current average demand"
       },
@@ -134,6 +140,22 @@
         "state": {
           "open": "Open",
           "closed": "Closed",
+          "ready_to_reconnect": "Ready to reconnect"
+        }
+      },
+      "gas_valve": {
+        "name": "Gas valve",
+        "state": {
+          "closed": "Closed",
+          "open": "Open",
+          "ready_to_reconnect": "Ready to reconnect"
+        }
+      },
+      "water_valve": {
+        "name": "Water valve",
+        "state": {
+          "closed": "Closed",
+          "open": "Open",
           "ready_to_reconnect": "Ready to reconnect"
         }
       },
