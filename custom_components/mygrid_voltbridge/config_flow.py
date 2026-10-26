@@ -181,7 +181,7 @@ class VoltBridgeFlow(ConfigFlow):
 
 
 class VoltBridgeOptionsFlow(OptionsFlow):
-    """Set how often the HTTP snapshot is refreshed alongside UDP push."""
+    """Set how often the snapshot, telegram and status are read beside the live stream."""
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None

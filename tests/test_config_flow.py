@@ -64,7 +64,7 @@ async def test_forms_are_serializable(
     hass: HomeAssistant,
     vb_client: AsyncMock,
     vb_entry: MockConfigEntry,
-    vb_listener,  # type: ignore[no-untyped-def]
+    vb_stream,  # type: ignore[no-untyped-def]
     vb_setup_entry: None,
 ) -> None:
     """The frontend gets 500 instead of a form if a schema cannot be serialized."""
@@ -223,7 +223,7 @@ async def test_reconfigure(
 
 
 async def test_options(
-    hass: HomeAssistant, vb_client: AsyncMock, vb_entry: MockConfigEntry, vb_listener
+    hass: HomeAssistant, vb_client: AsyncMock, vb_entry: MockConfigEntry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     vb_entry.add_to_hass(hass)
     assert await hass.config_entries.async_setup(vb_entry.entry_id)

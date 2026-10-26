@@ -18,7 +18,7 @@
     "mygrid_voltbridge"
   ],
   "requirements": [
-    "mygrid-voltbridge==0.5.0"
+    "mygrid-voltbridge==0.6.0"
   ],
   "version": "0.1.0",
   "zeroconf": [

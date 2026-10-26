@@ -45,12 +45,12 @@
     "step": {
       "voltbridge_init": {
         "title": "Polling",
-        "description": "Live power arrives by UDP push about once a second. The HTTP snapshot, which carries gas, is refreshed at this interval; it is also the fallback if UDP broadcasts do not reach Home Assistant.",
+        "description": "Live power arrives by UDP push about once a second, or is read from the device once a second while UDP broadcasts are lost or do not reach Home Assistant. The HTTP snapshot, which carries gas and totals, and the telegram are refreshed at this interval.",
         "data": {
           "poll_interval": "Polling interval (seconds)"
         },
         "data_description": {
-          "poll_interval": "How often the full HTTP snapshot is read. Live power arrives by UDP push regardless."
+          "poll_interval": "How often the full HTTP snapshot, the telegram and the status are read. Live power does not depend on it."
         }
       }
     }

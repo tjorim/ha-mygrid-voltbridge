@@ -12,7 +12,9 @@ Requires **Home Assistant 2026.10.2 or newer** (Python 3.14.2+). The integration
 > The MyGrid **ModuleTwo** battery has its own repository, [ha-mygrid-modbus](https://github.com/tjorim/ha-mygrid-modbus): HACS allows one integration per repository, so the two devices are separate integrations here.
 
 - **Push first:** live power, voltage and current arrive by UDP broadcast about once a second.
-- **Polling:** the HTTP snapshot and the raw DSMR telegram (energy totals, gas, water, breaker, peak history) are read every 30 s by default (5-600 s under **Configure**). It is also the only source if UDP broadcasts do not reach Home Assistant, for example across VLANs or in a container without host networking.
+- **Weak Wi-Fi or blocked broadcasts:** UDP datagrams are lost on a poor connection. While they are silent for a couple of seconds, or if they never reach Home Assistant (across VLANs, or a container without host networking), live power is read from the device's `/api/power` about once a second instead.
+- **Polling:** the HTTP snapshot (energy totals, gas) and the raw DSMR telegram (water, breaker, peak history) are read every 30 s by default (5-600 s under **Configure**).
+- **Offline:** the entities turn unavailable when the device has said nothing for 30 s, and come back by themselves.
 - **Discovery:** found automatically through mDNS (`_mygrid._tcp`), followed to a new address through DHCP, or enter its address manually.
 
 ## Installation
@@ -63,7 +65,7 @@ The only thing the integration ever sends to the device is the opt-in **Reboot**
 
 - *Cannot reach the VoltBridge:* open `http://<address>/` in a browser from the Home Assistant host. The page must load.
 - *No P1 telegram yet / repair "VoltBridge receives no P1 data":* check the P1 cable and that the meter's P1 port is enabled. The repair clears itself.
-- *Values only update every 30 s:* UDP broadcasts are not arriving. Check VLAN and firewall rules for UDP 49491, or use host networking.
+- *Live power updates about once a second but voltage and current are stale or missing:* UDP broadcasts are not arriving, so only the power fallback runs. Check VLAN and firewall rules for UDP 49491 and 49492, or use host networking.
 - Download **diagnostics** from the device page when reporting a problem; the host and meter serial are redacted.
 
 ## Removal

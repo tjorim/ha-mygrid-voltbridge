@@ -1,5 +1,5 @@
+import asyncio
 from datetime import timedelta
-from unittest.mock import AsyncMock
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
@@ -11,8 +11,8 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.util import dt as dt_util
 from mygrid_voltbridge import (
-    BroadcastStream,
     PhaseData,
+    UpdateSource,
     VoltBridgeConnectionError,
     VoltBridgeNoDataError,
     VoltBridgeUnsupportedError,
@@ -28,7 +28,6 @@ from custom_components.mygrid_voltbridge.diagnostics import (
 
 from .support import (
     SERIAL,
-    make_broadcast,
     make_data,
     make_device_info,
     make_status,
@@ -52,7 +51,7 @@ async def setup(hass: HomeAssistant, vb_entry: MockConfigEntry) -> None:
 
 
 async def test_entities_from_first_snapshot(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     assert state(hass, "net_power") == "261"
@@ -75,7 +74,7 @@ async def test_entities_from_first_snapshot(
 
 
 async def test_optional_sensors_skipped_when_unreported(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     vb_client.async_get_p1_data.return_value = make_data(
         gas=None, tariff=None, avg_demand=None, peak_demand=None, peak_demand_at=None
@@ -92,7 +91,7 @@ async def test_optional_sensors_skipped_when_unreported(
 
 
 async def test_night_tariff_and_second_phase(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     vb_client.async_get_p1_data.return_value = make_data(
         tariff=2,
@@ -103,76 +102,74 @@ async def test_night_tariff_and_second_phase(
     assert state(hass, "voltage_l2") == "231.0"
 
 
-async def test_push_updates_live_values_but_keeps_gas(
-    hass, vb_client, vb_entry, vb_listener
+async def test_stream_updates_reach_the_entities(
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
-    vb_listener()(
-        make_broadcast(
-            import_power=900, net_power=900, phases={1: PhaseData(900, 0, 236.0, 3.9)}
+    vb_stream.push(
+        make_data(
+            import_power=900,
+            net_power=900,
+            gas=441.0,
+            phases={1: PhaseData(900, 0, 236.0, 3.9)},
         )
     )
     await hass.async_block_till_done()
     assert state(hass, "net_power") == "900"
     assert state(hass, "voltage_l1") == "236.0"
-    assert state(hass, "gas") == "440.448"
-    assert vb_client.async_get_p1_data.await_count == 1
+    assert state(hass, "gas") == "441.0"
+    assert vb_client.async_get_p1_data.await_count == 1  # the stream does the rest
 
 
-async def test_push_from_other_meter_or_stream_ignored(
-    hass, vb_client, vb_entry, vb_listener
+async def test_stream_follows_the_configured_interval(
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
-    await setup(hass, vb_entry)
-    vb_listener()(make_broadcast(meter_serial="SOMEONE-ELSE", net_power=5))
-    aggregated = make_broadcast(net_power=6)
-    object.__setattr__(aggregated, "stream", BroadcastStream.AGGREGATED)
-    vb_listener()(aggregated)
+    vb_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(vb_entry, options={"poll_interval": 60})
+    assert await hass.config_entries.async_setup(vb_entry.entry_id)
     await hass.async_block_till_done()
-    assert state(hass, "net_power") == "261"
+    assert [(c["poll_interval"], c["offline_after"]) for c in vb_stream.calls] == [
+        (60.0, 30)
+    ]
 
 
-async def test_push_before_first_refresh_is_ignored(
-    hass, vb_client, vb_entry, vb_listener
+async def test_telegram_and_status_poll_beside_the_stream(
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
-    coordinator = vb_entry.runtime_data
-    coordinator.data = None
-    coordinator._handle_broadcast(make_broadcast())  # no snapshot to merge into
-
-
-async def test_polling_continues_despite_push(
-    hass, vb_client, vb_entry, vb_listener
-) -> None:  # type: ignore[no-untyped-def]
-    await setup(hass, vb_entry)
-    vb_client.async_get_p1_data.return_value = make_data(gas=441.0)
+    vb_client.async_get_status.return_value = make_status(rssi=-61)
     for _ in range(3):  # a 1 Hz stream must not starve the poll
-        vb_listener()(make_broadcast())
+        vb_stream.push(make_data())
         async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=11))
         await hass.async_block_till_done()
+    assert state(hass, "wifi_signal") == "-79"
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
     await hass.async_block_till_done()
-    assert state(hass, "gas") == "441.0"
+    assert state(hass, "wifi_signal") == "-61"
 
 
-async def test_poll_failure_marks_unavailable_then_recovers(
-    hass, vb_client, vb_entry, vb_listener
+async def test_offline_stream_marks_unavailable_then_recovers(
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
-    vb_client.async_get_p1_data.side_effect = VoltBridgeConnectionError("down")
-    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    vb_stream.fail(VoltBridgeConnectionError("down"))
     await hass.async_block_till_done()
     assert state(hass, "net_power") == STATE_UNAVAILABLE
-    vb_client.async_get_p1_data.side_effect = None
-    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=62))
+    await asyncio.sleep(0.01)  # background tasks are not awaited by block_till_done
+    assert len(vb_stream.calls) == 2  # followed again after the pause
+    assert vb_stream.calls[0]["initial"] is vb_entry.runtime_data.data
+    assert vb_stream.calls[1]["initial"] is None  # stale after an outage
+    vb_stream.push(make_data(net_power=300))
+    await asyncio.sleep(0.01)
     await hass.async_block_till_done()
-    assert state(hass, "net_power") == "261"
+    assert state(hass, "net_power") == "300"
 
 
 @pytest.mark.parametrize(
     "error", [VoltBridgeConnectionError("x"), VoltBridgeNoDataError("x")]
 )
 async def test_setup_retries_when_unreachable(
-    hass, vb_client, vb_entry, vb_listener, error
+    hass, vb_client, vb_entry, vb_stream, error
 ) -> None:  # type: ignore[no-untyped-def]
     vb_client.async_get_p1_data.side_effect = error
     vb_entry.add_to_hass(hass)
@@ -180,32 +177,18 @@ async def test_setup_retries_when_unreachable(
     assert vb_entry.state is ConfigEntryState.SETUP_RETRY
 
 
-async def test_polling_only_when_udp_unavailable(
-    hass, vb_client, vb_entry, caplog
-) -> None:  # type: ignore[no-untyped-def]
-    from unittest.mock import patch
-
-    with patch(
-        "custom_components.mygrid_voltbridge.coordinator.async_listen",
-        new_callable=AsyncMock,
-        side_effect=OSError("in use"),
-    ):
-        await setup(hass, vb_entry)
-    assert vb_entry.state is ConfigEntryState.LOADED
-    assert "polling only" in caplog.text
-
-
-async def test_unload_stops_push_and_poll(
-    hass, vb_client, vb_entry, vb_listener
-) -> None:  # type: ignore[no-untyped-def]
+async def test_unload_closes_the_stream(hass, vb_client, vb_entry, vb_stream) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
+    assert vb_stream.closed == 0
     assert await hass.config_entries.async_unload(vb_entry.entry_id)
+    await hass.async_block_till_done()
     assert vb_entry.state is ConfigEntryState.NOT_LOADED
+    assert vb_stream.closed == 1
     assert vb_client.async_get_p1_data.await_count == 1
 
 
 async def test_diagnostics_redacts_identifiers(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     result = await async_get_config_entry_diagnostics(hass, vb_entry)
@@ -218,7 +201,7 @@ async def test_diagnostics_redacts_identifiers(
 
 
 async def test_device_registry_and_disabled_defaults(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     vb_entry.add_to_hass(hass)
     hass.config_entries.async_update_entry(
@@ -251,7 +234,7 @@ async def test_device_registry_and_disabled_defaults(
 
 
 async def test_device_carries_adapter_identity(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     """Firmware and MAC come from the status page; hardware from discovery."""
     vb_entry.add_to_hass(hass)
@@ -272,7 +255,7 @@ async def test_device_carries_adapter_identity(
 
 
 async def test_firmware_update_reaches_device_without_reload(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     registry = dr.async_get(hass)
@@ -293,9 +276,7 @@ async def test_firmware_update_reaches_device_without_reload(
     assert registry.async_get(device.id).sw_version == "app:build-15.7"
 
 
-async def test_device_without_status_page(
-    hass, vb_client, vb_entry, vb_listener
-) -> None:  # type: ignore[no-untyped-def]
+async def test_device_without_status_page(hass, vb_client, vb_entry, vb_stream) -> None:  # type: ignore[no-untyped-def]
     """Setup survives a failing status page; the meter serial still identifies."""
     vb_client.async_get_device_info.side_effect = VoltBridgeConnectionError("down")
     await setup(hass, vb_entry)
@@ -309,7 +290,7 @@ async def test_device_without_status_page(
 
 
 async def test_discovered_mac_wins_over_status_page(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     vb_client.async_get_device_info.return_value = make_device_info(
         mac_address="aa:bb:cc:dd:ee:ff"
@@ -326,7 +307,7 @@ async def test_discovered_mac_wins_over_status_page(
     assert device.serial_number == "90:70:69:d0:2d:80"
 
 
-async def test_meter_identity_sensors(hass, vb_client, vb_entry, vb_listener) -> None:  # type: ignore[no-untyped-def]
+async def test_meter_identity_sensors(hass, vb_client, vb_entry, vb_stream) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     telegram = make_telegram()
     assert state(hass, "meter_model") == telegram.meter_model
@@ -336,23 +317,23 @@ async def test_meter_identity_sensors(hass, vb_client, vb_entry, vb_listener) ->
 
 
 async def test_repair_issue_while_no_p1_data(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     issues = ir.async_get(hass)
     issue_id = f"no_p1_data_{vb_entry.entry_id}"
     assert issues.async_get_issue("mygrid_voltbridge", issue_id) is None
-    vb_client.async_get_p1_data.side_effect = VoltBridgeNoDataError("none")
-    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=31))
+    vb_stream.fail(VoltBridgeNoDataError("none"))
     await hass.async_block_till_done()
     assert issues.async_get_issue("mygrid_voltbridge", issue_id) is not None
-    vb_client.async_get_p1_data.side_effect = None
-    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=62))
+    assert state(hass, "net_power") == STATE_UNAVAILABLE
+    vb_stream.push(make_data())
     await hass.async_block_till_done()
     assert issues.async_get_issue("mygrid_voltbridge", issue_id) is None
+    assert state(hass, "net_power") == "261"
 
 
-async def test_telegram_sensors(hass, vb_client, vb_entry, vb_listener) -> None:  # type: ignore[no-untyped-def]
+async def test_telegram_sensors(hass, vb_client, vb_entry, vb_stream) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     assert state(hass, "water") == "33.692"
     assert state(hass, "breaker") == "closed"
@@ -376,7 +357,7 @@ async def test_telegram_sensors(hass, vb_client, vb_entry, vb_listener) -> None:
 
 
 async def test_real_limits_create_disabled_diagnostics(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     telegram = make_telegram()
     object.__setattr__(telegram, "limiter_threshold", 5750)
@@ -392,7 +373,7 @@ async def test_real_limits_create_disabled_diagnostics(
 
 
 async def test_telegram_failures_never_break_the_snapshot(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     coordinator = vb_entry.runtime_data
@@ -410,7 +391,7 @@ async def test_telegram_failures_never_break_the_snapshot(
 
 
 async def test_no_telegram_support_skips_those_sensors(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     vb_client.async_get_telegram.side_effect = VoltBridgeUnsupportedError("404")
     await setup(hass, vb_entry)
@@ -425,26 +406,29 @@ async def test_no_telegram_support_skips_those_sensors(
     assert state(hass, "net_power") == "261"
 
 
-async def test_status_sensors(hass, vb_client, vb_entry, vb_listener) -> None:  # type: ignore[no-untyped-def]
+async def test_status_sensors(hass, vb_client, vb_entry, vb_stream) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     assert state(hass, "wifi_signal") == "-79"
     assert state(hass, "p1_error_rate") == "1.0"
 
 
-async def test_push_keeps_the_signal_strength_fresh(
-    hass, vb_client, vb_entry, vb_listener
+async def test_stream_keeps_the_signal_strength_fresh(
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
-    broadcast = make_broadcast()
-    object.__setattr__(broadcast, "rssi", -61)
-    vb_listener()(broadcast)
+    vb_stream.push(make_data(), rssi=-61)
     await hass.async_block_till_done()
     assert state(hass, "wifi_signal") == "-61"
     assert state(hass, "p1_error_rate") == "1.0"  # unchanged until the next poll
+    vb_stream.push(
+        make_data(net_power=5), UpdateSource.P1DATA
+    )  # no signal in an HTTP read
+    await hass.async_block_till_done()
+    assert state(hass, "wifi_signal") == "-61"
 
 
 async def test_status_failures_keep_the_last_reading(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     coordinator = vb_entry.runtime_data
@@ -461,7 +445,7 @@ async def test_status_failures_keep_the_last_reading(
 
 
 async def test_no_status_support_skips_those_sensors(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     vb_client.async_get_status.side_effect = VoltBridgeUnsupportedError("404")
     await setup(hass, vb_entry)
@@ -477,7 +461,7 @@ async def test_no_status_support_skips_those_sensors(
 
 
 async def test_status_without_values_creates_no_sensors(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     vb_client.async_get_status.return_value = make_status(rssi=None, error_percent=None)
     await setup(hass, vb_entry)
@@ -501,7 +485,7 @@ def reboot_entity(hass: HomeAssistant) -> str:
 
 
 async def test_reboot_button_is_opt_in_and_reboots_once(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     registry = er.async_get(hass)
@@ -521,7 +505,7 @@ async def test_reboot_button_is_opt_in_and_reboots_once(
 
 
 async def test_reboot_failure_is_a_translated_error(
-    hass, vb_client, vb_entry, vb_listener
+    hass, vb_client, vb_entry, vb_stream
 ) -> None:  # type: ignore[no-untyped-def]
     await setup(hass, vb_entry)
     registry = er.async_get(hass)
