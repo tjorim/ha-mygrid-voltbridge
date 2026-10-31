@@ -9,7 +9,7 @@ dependencies = []
 [dependency-groups]
 dev = [
   "mygrid-voltbridge==0.6.0",
-  "pytest-homeassistant-custom-component==0.13.373",
+  "pytest-homeassistant-custom-component==0.13.375",
   "ruff==0.17.3",
   "mypy==2.4.0",
 ]
