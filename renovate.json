@@ -1,13 +1,7 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>tjorim/renovate-config",
-    "github>tjorim/renovate-config:python-lib"
-  ],
-  "enabledManagers": [
-    "pep621",
-    "github-actions",
-    "homeassistant-manifest"
+    "github>tjorim/renovate-config:home-assistant"
   ],
   "packageRules": [
     {
