@@ -1,7 +1,20 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>tjorim/renovate-config",
-    "github>tjorim/renovate-config:python-lib"
+    "github>tjorim/renovate-config:home-assistant"
+  ],
+  "packageRules": [
+    {
+      "description": [
+        "Update the runtime manifest and development dependency together."
+      ],
+      "matchDatasources": [
+        "pypi"
+      ],
+      "matchPackageNames": [
+        "mygrid-voltbridge"
+      ],
+      "groupName": "mygrid-voltbridge"
+    }
   ]
 }
