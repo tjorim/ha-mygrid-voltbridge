@@ -3,5 +3,24 @@
   "extends": [
     "github>tjorim/renovate-config",
     "github>tjorim/renovate-config:python-lib"
+  ],
+  "enabledManagers": [
+    "pep621",
+    "github-actions",
+    "homeassistant-manifest"
+  ],
+  "packageRules": [
+    {
+      "description": [
+        "Update the runtime manifest and development dependency together."
+      ],
+      "matchDatasources": [
+        "pypi"
+      ],
+      "matchPackageNames": [
+        "mygrid-voltbridge"
+      ],
+      "groupName": "mygrid-voltbridge"
+    }
   ]
 }

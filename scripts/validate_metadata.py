@@ -4,8 +4,33 @@ import json
 import tomllib
 from pathlib import Path
 
+from packaging.requirements import Requirement
+
 ROOT = Path(__file__).resolve().parents[1]
 COMPONENT = ROOT / "custom_components/mygrid_voltbridge"
+
+
+def validate_library_pin(requirements: list[str], dev: list[str]) -> None:
+    """Require one exact library version shared by runtime and tests."""
+    if len(requirements) != 1:
+        msg = "Expected one runtime library requirement"
+        raise ValueError(msg)
+    requirement = Requirement(requirements[0])
+    pins = list(requirement.specifier)
+    if (
+        requirement.name != "mygrid-voltbridge"
+        or requirement.url is not None
+        or requirement.marker is not None
+        or requirement.extras
+        or len(pins) != 1
+        or pins[0].operator != "=="
+        or "*" in pins[0].version
+    ):
+        msg = "Expected an exact mygrid-voltbridge version"
+        raise ValueError(msg)
+    if requirements[0] not in dev:
+        msg = "Runtime library pin must match the development dependency"
+        raise ValueError(msg)
 
 
 def main() -> None:
@@ -19,8 +44,7 @@ def main() -> None:
     ]
     assert manifest["domain"] == "mygrid_voltbridge"
     assert manifest["version"] == project["project"]["version"] == "0.1.0"
-    assert manifest["requirements"] == ["mygrid-voltbridge==0.6.0"]
-    assert manifest["requirements"][0] in project["dependency-groups"]["dev"]
+    validate_library_pin(manifest["requirements"], project["dependency-groups"]["dev"])
     assert "dependencies" not in manifest
     assert manifest["dhcp"] == [{"registered_devices": True}]
     assert manifest["zeroconf"] == [
