@@ -39,7 +39,7 @@ On **Home Assistant 2026.11 or newer**, open **Settings → Marketplace** and ad
 **Integration**. Install **MyGrid VoltBridge** and follow any restart prompt.
 Catalog listing is separate from custom-repository installation.
 
-On **Home Assistant 2026.10**, use **HACS → Custom repositories**, add the same
+On **Home Assistant 2026.10.2 or newer in the 2026.10 series**, use **HACS → Custom repositories**, add the same
 URL as an **Integration**, download it and restart Home Assistant.
 
 [Open this repository in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=tjorim&repository=ha-mygrid-voltbridge&category=integration).
@@ -118,7 +118,11 @@ The only thing the integration ever sends to the device is the opt-in **Reboot**
 
 ## Removal
 
-Delete the entry under **Settings → Devices & services**; this removes its device, entities and any repair issue. Optionally remove the HACS download and restart.
+Delete the entry under **Settings → Devices & services**; this removes its device, entities and any repair issue. To remove the installed files on Home Assistant 2026.11 or newer, open this
+repository under **Settings → Marketplace**, select **⋮ → Uninstall**, and
+follow any restart prompt. On Home Assistant 2026.10.2–2026.10.x, remove the
+HACS download and restart. For a manual installation, remove the local directory
+and restart.
 
 Release preparation and catalog prerequisites are covered in [the release guide](docs/releasing.md).
 
