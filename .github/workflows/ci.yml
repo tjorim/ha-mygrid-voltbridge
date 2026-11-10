@@ -46,5 +46,3 @@ jobs:
         with:
           category: integration
           comment: false
-          # Manufacturer-approved artwork has not been supplied.
-          ignore: brands

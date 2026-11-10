@@ -43,7 +43,7 @@ def main() -> None:
         *sorted(set(manifest) - {"domain", "name"}),
     ]
     assert manifest["domain"] == "mygrid_voltbridge"
-    assert manifest["version"] == project["project"]["version"] == "0.1.0"
+    assert manifest["version"] == project["project"]["version"]
     validate_library_pin(manifest["requirements"], project["dependency-groups"]["dev"])
     assert "dependencies" not in manifest
     assert manifest["dhcp"] == [{"registered_devices": True}]
@@ -53,9 +53,10 @@ def main() -> None:
     assert manifest["config_flow"]
     assert manifest["iot_class"] == "local_push"
     assert "quality_scale" not in manifest
-    assert json.loads((COMPONENT / "strings.json").read_text()) == json.loads(
-        (COMPONENT / "translations/en.json").read_text()
-    )
+    assert manifest["categories"] == ["energy.meters_monitoring"]
+    assert not (COMPONENT / "strings.json").exists()
+    translations = json.loads((COMPONENT / "translations/en.json").read_text())
+    assert {"config", "entity"} <= translations.keys()
     print("HACS metadata and library pin validated.")
 
 

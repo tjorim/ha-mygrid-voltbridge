@@ -8,8 +8,8 @@ rules:
     status: done
     comment: Live values arrive by UDP push, with a once-a-second /api/power fallback while it is silent; the HTTP snapshot and telegram are polled every 30 s (5–600 s configurable) because the device is a small microcontroller. tests/test_integration.py.
   brands:
-    status: todo
-    comment: Add approved manufacturer artwork and submit to HA brands when publishing; no artwork rights were supplied.
+    status: done
+    comment: Local brand/icon.png and icon@2x.png use the community-project artwork from custom-mygrid (Apache-2.0), not manufacturer or Home Assistant branding.
   common-modules:
     status: done
     comment: The independent mygrid-voltbridge library owns the API and decoding; common integration modules own the Home Assistant lifecycle.
@@ -21,7 +21,7 @@ rules:
     comment: tests/test_config_flow.py covers success, duplicate, failure, options and reconfiguration paths.
   dependency-transparency:
     status: done
-    comment: Developer README and draft user documentation and manifest disclose mygrid-voltbridge==0.4.0, which has public source and CI and is published on PyPI.
+    comment: Developer README and draft user documentation and manifest disclose mygrid-voltbridge==0.6.0, which has public source and CI and is published on PyPI.
   docs-actions:
     status: done
     comment: Developer README and draft user documentation explains the reboot button.
@@ -33,7 +33,7 @@ rules:
     comment: Developer README and draft user documentation introduction and protocol scope.
   docs-installation-instructions:
     status: done
-    comment: Developer README and draft user documentation provides immediately usable manual installation and post-publication HACS instructions.
+    comment: Developer README and draft user documentation provides immediately usable manual installation and HACS custom-repository instructions.
   docs-removal-instructions:
     status: done
     comment: Developer README and draft user documentation explains entry removal and uninstalling.
@@ -66,13 +66,13 @@ rules:
     comment: Standard entity actions raise translated ServiceValidationError or HomeAssistantError.
   config-entry-unloading:
     status: done
-    comment: Platform unload removes listeners and releases the managed unit; other consumers keep their connection. tests/test_integration.py.
+    comment: Entry unload cancels the live stream and periodic callbacks. tests/test_integration.py.
   docs-configuration-parameters:
     status: done
     comment: Developer README and draft user documentation documents the host and the polling options.
   docs-installation-parameters:
     status: done
-    comment: Developer README and draft user documentation documents host, port and fixed unit ID.
+    comment: Developer README and draft user documentation documents the host and discovery requirements.
   entity-unavailable:
     status: done
     comment: Entities follow coordinator availability.
@@ -125,8 +125,8 @@ rules:
     status: done
     comment: Developer README and draft user documentation covers energy monitoring and automation examples.
   dynamic-devices:
-    status: exempt
-    comment: Each config entry represents exactly one device.
+    status: done
+    comment: Gas and water meters have separate devices; newly detected or replaced meters trigger an entry reload.
   entity-category:
     status: done
     comment: Breaker, limiter, fuse, peak time, Wi-Fi signal and packet error rate are diagnostics.
@@ -138,7 +138,7 @@ rules:
     comment: Per-phase power and limiter/fuse thresholds are opt-in.
   entity-translations:
     status: done
-    comment: All names and enum states have English translation keys and a matching strings.json.
+    comment: All names and enum states have English translation keys in translations/en.json.
   exception-translations:
     status: done
     comment: Errors raised to users use translated exception messages.
@@ -152,8 +152,8 @@ rules:
     status: done
     comment: A repair issue is raised while a reachable VoltBridge receives no P1 data and clears itself. tests/test_integration.py.
   stale-devices:
-    status: exempt
-    comment: No dynamic subdevices; entry removal removes the single configured device through HA.
+    status: todo
+    comment: Replaced M-Bus meters remain in the registry; README documents manual removal.
   async-dependency:
     status: done
     comment: The client is fully async and uses the Home Assistant aiohttp session.
