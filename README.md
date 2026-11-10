@@ -2,8 +2,19 @@
 
 ## Documentation
 
-See the [MyGrid documentation hub](https://github.com/tjorim/custom-mygrid#readme)
-for device setup guides, protocol references and repository links.
+Read the [complete VoltBridge setup guide](https://tjorim.github.io/custom-mygrid/docs/voltbridge/)
+on the MyGrid documentation website, alongside the other device guides.
+
+This README is the authoritative source for this integration's installation,
+configuration, entities, Energy dashboard setup, automation examples and
+troubleshooting. Edit those instructions here; the website publishes a reviewed,
+commit-pinned snapshot, so it may lag this branch. Integration acceptance and
+release instructions belong in this repository's `docs/` directory.
+
+Python usage, device prerequisites and protocol details belong in
+[`python-mygrid-voltbridge`](https://github.com/tjorim/python-mygrid-voltbridge). Link to that
+source rather than copying its reference tables. Contributor guidance lives in
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 Home Assistant custom integration for the [**MyGrid VoltBridge**](https://moduletwo.mygrid.energy/nl/voltbridge) P1 meter adapter. It talks to the device on your LAN only (no cloud, no MQTT broker needed): live values by the device's UDP broadcast and the rest over its local HTTP API.
 
