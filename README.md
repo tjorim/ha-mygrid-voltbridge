@@ -5,6 +5,7 @@
 Read the [complete VoltBridge setup guide](https://tjorim.github.io/custom-mygrid/docs/voltbridge/)
 on the MyGrid documentation website, alongside the other device guides.
 
+<!-- ha-marketplace:exclude-start -->
 This README is the authoritative source for this integration's installation,
 configuration, entities, Energy dashboard setup, automation examples and
 troubleshooting. Edit those instructions here; the website publishes a reviewed,
@@ -15,6 +16,7 @@ Python usage, device prerequisites and protocol details belong in
 [`python-mygrid-voltbridge`](https://github.com/tjorim/python-mygrid-voltbridge). Link to that
 source rather than copying its reference tables. Contributor guidance lives in
 [CONTRIBUTING.md](CONTRIBUTING.md).
+<!-- ha-marketplace:exclude-end -->
 
 Home Assistant custom integration for the [**MyGrid VoltBridge**](https://moduletwo.mygrid.energy/nl/voltbridge) P1 meter adapter. It talks to the device on your LAN only (no cloud, no MQTT broker needed): live values by the device's UDP broadcast and the rest over its local HTTP API.
 
@@ -28,19 +30,40 @@ Requires **Home Assistant 2026.10.2 or newer** (Python 3.14.2+). The integration
 - **Offline:** the entities turn unavailable when the device has said nothing for 30 s, and come back by themselves.
 - **Discovery:** found automatically through mDNS (`_mygrid._tcp`), followed to a new address through DHCP, or enter its address manually.
 
+<!-- ha-marketplace:exclude-start -->
+
 ## Installation
 
-[![Open your Home Assistant instance and open this repository in HACS or the Marketplace.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tjorim&repository=ha-mygrid-voltbridge&category=integration)
+On **Home Assistant 2026.11 or newer**, open **Settings → Marketplace** and add
+`https://github.com/tjorim/ha-mygrid-voltbridge` as a custom repository of type
+**Integration**. Install **MyGrid VoltBridge** and follow any restart prompt.
+Catalog listing is separate from custom-repository installation.
 
-1. HACS → three-dot menu → *Custom repositories* → add `https://github.com/tjorim/ha-mygrid-voltbridge` as an *Integration*, then download it. Alternatively copy `custom_components/mygrid_voltbridge` into your Home Assistant configuration directory (`dist/mygrid-voltbridge-0.1.0.zip` is built by `scripts/build_release.py`).
-2. Restart Home Assistant.
-3. The VoltBridge is discovered automatically (**Settings → Devices & services**). Otherwise choose **Add integration → MyGrid VoltBridge** and enter its address.
+On **Home Assistant 2026.10**, use **HACS → Custom repositories**, add the same
+URL as an **Integration**, download it and restart Home Assistant.
 
-Connect the P1 cable before adding the device: entities are created from the first snapshot, and setup waits until the meter has delivered a telegram. Each meter is identified by its P1 serial, so an IP change is picked up automatically by discovery, or via **Reconfigure** (which refuses a different meter).
+[Open this repository in the Marketplace](https://my.home-assistant.io/redirect/marketplace_repository/?owner=tjorim&repository=ha-mygrid-voltbridge&category=integration).
 
-After installation, start setup directly:
+For manual installation, copy the entire `custom_components/mygrid_voltbridge`
+directory into `<config>/custom_components/mygrid_voltbridge` and restart Home Assistant.
+Home Assistant installs the Python library from PyPI; network access is required
+for its first installation.
 
-[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=mygrid_voltbridge)
+See [release instructions](docs/releasing.md) for manual-install ZIPs and publishing.
+<!-- ha-marketplace:exclude-end -->
+
+## Configuration
+
+The VoltBridge is discovered automatically under **Settings → Devices & services**.
+Otherwise choose **Add integration → MyGrid VoltBridge** and enter its hostname
+or IP address, without a URL scheme.
+
+Connect the P1 cable before adding the device: entities are created from the
+first snapshot, and setup waits until the meter has delivered a telegram. Each
+meter is identified by its P1 serial. Discovery follows IP changes; **Reconfigure**
+lets you change the address while refusing a different meter.
+
+After installation, [start setup in Home Assistant](https://my.home-assistant.io/redirect/config_flow_start/?domain=mygrid_voltbridge).
 
 ## Entities
 
@@ -99,6 +122,8 @@ Delete the entry under **Settings → Devices & services**; this removes its dev
 
 Release preparation and catalog prerequisites are covered in [the release guide](docs/releasing.md).
 
+<!-- ha-marketplace:exclude-start -->
+
 ## Development
 
 This is the community-testing integration for the VoltBridge. HACS allows one integration per repository, so each MyGrid device has its own HACS repository. This repository is the source of truth for its integration code and tests; the device library is a separate PyPI package.
@@ -127,3 +152,5 @@ Change integration code and tests here. Change device or API behavior in `python
 To try the integration in a real Home Assistant, run `scripts/develop`: it starts Home Assistant with the component importable from this checkout and a configuration in `config/` (ignored by git). The first start installs the default integrations' requirements and needs network access; then open http://localhost:8123.
 
 A live end-to-end test runs the integration inside the Home Assistant test runtime against a real device: `VOLTBRIDGE_HOST=192.168.0.45 uv run pytest -m live --no-cov`. It is excluded from ordinary runs.
+
+<!-- ha-marketplace:exclude-end -->
