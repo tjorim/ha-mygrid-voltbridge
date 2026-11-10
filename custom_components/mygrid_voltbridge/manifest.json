@@ -1,6 +1,9 @@
 {
   "domain": "mygrid_voltbridge",
   "name": "MyGrid VoltBridge",
+  "categories": [
+    "energy.meters_monitoring"
+  ],
   "codeowners": [
     "@tjorim"
   ],

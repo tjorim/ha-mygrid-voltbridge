@@ -19,11 +19,17 @@ Requires **Home Assistant 2026.10.2 or newer** (Python 3.14.2+). The integration
 
 ## Installation
 
+[![Open your Home Assistant instance and open this repository in HACS or the Marketplace.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=tjorim&repository=ha-mygrid-voltbridge&category=integration)
+
 1. HACS → three-dot menu → *Custom repositories* → add `https://github.com/tjorim/ha-mygrid-voltbridge` as an *Integration*, then download it. Alternatively copy `custom_components/mygrid_voltbridge` into your Home Assistant configuration directory (`dist/mygrid-voltbridge-0.1.0.zip` is built by `scripts/build_release.py`).
 2. Restart Home Assistant.
 3. The VoltBridge is discovered automatically (**Settings → Devices & services**). Otherwise choose **Add integration → MyGrid VoltBridge** and enter its address.
 
 Connect the P1 cable before adding the device: entities are created from the first snapshot, and setup waits until the meter has delivered a telegram. Each meter is identified by its P1 serial, so an IP change is picked up automatically by discovery, or via **Reconfigure** (which refuses a different meter).
+
+After installation, start setup directly:
+
+[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=mygrid_voltbridge)
 
 ## Entities
 
@@ -80,6 +86,8 @@ The only thing the integration ever sends to the device is the opt-in **Reboot**
 
 Delete the entry under **Settings → Devices & services**; this removes its device, entities and any repair issue. Optionally remove the HACS download and restart.
 
+Release preparation and catalog prerequisites are covered in [the release guide](docs/releasing.md).
+
 ## Development
 
 This is the community-testing integration for the VoltBridge. HACS allows one integration per repository, so each MyGrid device has its own HACS repository. This repository is the source of truth for its integration code and tests; the device library is a separate PyPI package.
@@ -103,7 +111,7 @@ uv run python scripts/validate_metadata.py
 uv run python scripts/build_release.py
 ```
 
-Change integration code and tests here. Change device or API behavior in `python-mygrid-voltbridge`, publish a release to PyPI, then bump the `mygrid-voltbridge==` pin in `custom_components/mygrid_voltbridge/manifest.json` and in the `dev` dependency group of `pyproject.toml` (run `uv lock`); `scripts/validate_metadata.py` fails if the two pins differ. Entries of this package do not migrate to a core integration later; add the device again there. Manufacturer-approved brand art is still pending, so HACS's brand check is exempted. The earlier prototype of this repository used the same domain, so its config entries keep working.
+Change integration code and tests here. Change device or API behavior in `python-mygrid-voltbridge`, publish a release to PyPI, then bump the `mygrid-voltbridge==` pin in `custom_components/mygrid_voltbridge/manifest.json` and in the `dev` dependency group of `pyproject.toml` (run `uv lock`); `scripts/validate_metadata.py` fails if the two pins differ. Entries of this package do not migrate to a core integration later; add the device again there. The integration ships the community project's green lightning icon; HACS checks branding without exemptions. The earlier prototype of this repository used the same domain, so its config entries keep working.
 
 To try the integration in a real Home Assistant, run `scripts/develop`: it starts Home Assistant with the component importable from this checkout and a configuration in `config/` (ignored by git). The first start installs the default integrations' requirements and needs network access; then open http://localhost:8123.
 

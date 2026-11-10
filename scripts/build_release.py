@@ -24,7 +24,7 @@ def main() -> None:
             info = zipfile.ZipInfo(path.relative_to(ROOT).as_posix())
             info.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(info, path.read_bytes())
-        for name in ["LICENSE", "README.md"]:
+        for name in ["LICENSE", "NOTICE", "README.md"]:
             archive.writestr(zipfile.ZipInfo(name), (ROOT / name).read_bytes())
     print(output)
 
